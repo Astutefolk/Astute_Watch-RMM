@@ -54,9 +54,8 @@ export function Button({
 }
 
 // Card with glass-morphism effect
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
-  className?: string;
   variant?: 'default' | 'glass' | 'gradient';
   hoverable?: boolean;
 }
@@ -83,7 +82,7 @@ function CardContent({ children, className }: CardContentProps) {
   return <div className={className}>{children}</div>;
 }
 
-export function Card({ children, className, variant = 'default', hoverable = false }: CardProps) {
+export function Card({ children, className, variant = 'default', hoverable = false, ...props }: CardProps) {
   const baseClasses = 'rounded-2xl backdrop-blur-glass transition-all duration-300 overflow-hidden';
   
   const variants = {
@@ -101,6 +100,7 @@ export function Card({ children, className, variant = 'default', hoverable = fal
         hoverable && 'hover:shadow-lg hover:border-primary-500/30 dark:hover:border-primary-500/30 hover:scale-105 cursor-pointer',
         className
       )}
+      {...props}
     >
       {children}
     </div>

@@ -125,7 +125,7 @@ export default function DeviceDetailPage({ params }: { params: { id: string } })
       </Card>
 
       {/* Metrics Chart */}
-      {device.metrics && device.metrics.length > 0 && (
+      {Array.isArray(device.metrics) && device.metrics.length > 0 && (
         <Card>
           <h2 className="text-lg font-semibold mb-4">Metrics History</h2>
           <MetricsChart metrics={device.metrics} />

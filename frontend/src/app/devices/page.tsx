@@ -81,6 +81,7 @@ export default function DevicesPage() {
                   key={device.id}
                   href={`/devices/${device.id}`}
                   className="hover:scale-105 transition-transform"
+                  title={`View details for device ${device.name || device.id}`}
                 >
                   <DeviceCard device={device} />
                 </a>
