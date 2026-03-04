@@ -1,8 +1,5 @@
 // Jest setup for backend tests
-import dotenv from 'dotenv';
-
-// Load test environment
-dotenv.config({ path: '.env.test' });
+require('dotenv').config({ path: '.env.test' });
 
 // Mock Redis if needed
 jest.mock('redis', () => ({

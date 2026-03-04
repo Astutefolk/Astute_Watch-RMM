@@ -22,13 +22,13 @@ export async function comparePasswords(
 export function generateAccessToken(payload: TokenPayload): string {
   return jwt.sign(payload, envConfig.jwtSecret, {
     expiresIn: envConfig.jwtExpiresIn,
-  });
+  } as any);
 }
 
 export function generateRefreshToken(userId: string): string {
   return jwt.sign({ userId }, envConfig.refreshTokenSecret, {
     expiresIn: envConfig.refreshTokenExpiresIn,
-  });
+  } as any);
 }
 
 export function verifyAccessToken(token: string): TokenPayload | null {

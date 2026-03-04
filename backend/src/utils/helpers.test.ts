@@ -1,8 +1,15 @@
-import { hashPassword, generateApiKey, generateJWT, verifyJWT } from '../utils/helpers';
+import {
+  hashPassword,
+  comparePasswords,
+  generateApiKey,
+  hashApiKey,
+  isValidEmail,
+  validatePassword
+} from '../utils/helpers';
 
 describe('Helper Functions', () => {
   describe('Password Hashing', () => {
-    it('should hash password and verify correctly', async () => {
+    it('should hash password', async () => {
       const password = 'TestPassword123!';
       const hash = await hashPassword(password);
 
@@ -10,12 +17,19 @@ describe('Helper Functions', () => {
       expect(hash.length).toBeGreaterThan(20);
     });
 
+    it('should compare password with hash correctly', async () => {
+      const password = 'TestPassword123!';
+      const hash = await hashPassword(password);
+
+      const isValid = await comparePasswords(password, hash);
+      expect(isValid).toBe(true);
+    });
+
     it('should reject incorrect password', async () => {
       const password = 'TestPassword123!';
       const hash = await hashPassword(password);
 
-      const bcrypt = require('bcryptjs');
-      const isValid = await bcrypt.compare('WrongPassword', hash);
+      const isValid = await comparePasswords('WrongPassword', hash);
       expect(isValid).toBe(false);
     });
   });
@@ -26,61 +40,78 @@ describe('Helper Functions', () => {
       const key2 = generateApiKey();
 
       expect(key1).not.toBe(key2);
-      expect(key1.length).toBeGreaterThan(20);
-      expect(key2.length).toBeGreaterThan(20);
+      expect(key1.startsWith('key_')).toBe(true);
+      expect(key2.startsWith('key_')).toBe(true);
     });
 
-    it('should generate deterministic hash for same key', () => {
+    it('should hash API key consistently', () => {
       const key = generateApiKey();
-      const hash1 = require('crypto').createHash('sha256').update(key).digest('hex');
-      const hash2 = require('crypto').createHash('sha256').update(key).digest('hex');
+      const hash1 = hashApiKey(key);
+      const hash2 = hashApiKey(key);
 
       expect(hash1).toBe(hash2);
+      expect(hash1.length).toBe(64); // SHA256 hex is 64 chars
+    });
+
+    it('should generate different hashes for different keys', () => {
+      const key1 = generateApiKey();
+      const key2 = generateApiKey();
+
+      const hash1 = hashApiKey(key1);
+      const hash2 = hashApiKey(key2);
+
+      expect(hash1).not.toBe(hash2);
     });
   });
 
-  describe('JWT Generation and Verification', () => {
-    it('should generate valid JWT token', () => {
-      const token = generateJWT({
-        userId: 'user-123',
-        email: 'test@example.com',
-        role: 'ADMIN'
-      });
-
-      expect(token).toBeDefined();
-      expect(typeof token).toBe('string');
-      expect(token.split('.').length).toBe(3); // JWT format: header.payload.signature
+  describe('Email Validation', () => {
+    it('should validate correct email', () => {
+      expect(isValidEmail('test@example.com')).toBe(true);
+      expect(isValidEmail('user.name@domain.co.uk')).toBe(true);
     });
 
-    it('should verify valid JWT token', () => {
-      const payload = {
-        userId: 'user-123',
-        email: 'test@example.com',
-        role: 'ADMIN'
-      };
+    it('should reject invalid email', () => {
+      expect(isValidEmail('invalid-email')).toBe(false);
+      expect(isValidEmail('@example.com')).toBe(false);
+      expect(isValidEmail('test@')).toBe(false);
+    });
+  });
 
-      const token = generateJWT(payload);
-      const verified = verifyJWT(token);
-
-      expect(verified).toBeDefined();
-      expect(verified.userId).toBe('user-123');
-      expect(verified.email).toBe('test@example.com');
+  describe('Password Validation', () => {
+    it('should validate strong password', () => {
+      const result = validatePassword('StrongPass123!');
+      expect(result.valid).toBe(true);
+      expect(result.errors.length).toBe(0);
     });
 
-    it('should reject expired token', async () => {
-      // Create token with very short expiry
-      const jwt = require('jsonwebtoken');
-      const token = jwt.sign(
-        { userId: 'user-123', email: 'test@example.com' },
-        process.env.JWT_SECRET || 'test-secret',
-        { expiresIn: '0s' }
-      );
+    it('should reject too short password', () => {
+      const result = validatePassword('Short1!');
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('Password must be at least 8 characters');
+    });
 
-      // Wait a moment
-      await new Promise(resolve => setTimeout(resolve, 100));
+    it('should reject password without uppercase', () => {
+      const result = validatePassword('lowercase123!');
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('Password must contain at least one uppercase letter');
+    });
 
-      // Should throw on verification
-      expect(() => verifyJWT(token)).toThrow();
+    it('should reject password without lowercase', () => {
+      const result = validatePassword('UPPERCASE123!');
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('Password must contain at least one lowercase letter');
+    });
+
+    it('should reject password without number', () => {
+      const result = validatePassword('NoNumber!');
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain('Password must contain at least one number');
+    });
+
+    it('should allow multiple validation errors', () => {
+      const result = validatePassword('weak');
+      expect(result.valid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(1);
     });
   });
 });

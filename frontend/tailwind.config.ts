@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -9,12 +10,111 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        primary: '#3b82f6',
-        secondary: '#10b981',
-        danger: '#ef4444',
-        warning: '#f59e0b',
-        dark: '#1f2937',
-        light: '#f9fafb',
+        primary: {
+          50: '#f0f9ff',
+          100: '#e0f2fe',
+          200: '#bae6fd',
+          300: '#7dd3fc',
+          400: '#38bdf8',
+          500: '#0ea5e9',
+          600: '#0284c7',
+          700: '#0369a1',
+          800: '#075985',
+          900: '#0c3d66',
+          950: '#082f49',
+        },
+        accent: {
+          50: '#f0fdf4',
+          100: '#dcfce7',
+          200: '#bbf7d0',
+          300: '#86efac',
+          400: '#4ade80',
+          500: '#22c55e',
+          600: '#16a34a',
+          700: '#15803d',
+          800: '#166534',
+          900: '#145231',
+        },
+        danger: {
+          50: '#fef2f2',
+          100: '#fee2e2',
+          200: '#fecaca',
+          300: '#fca5a5',
+          400: '#f87171',
+          500: '#ef4444',
+          600: '#dc2626',
+          700: '#b91c1c',
+          800: '#991b1b',
+          900: '#7f1d1d',
+        },
+        warning: {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
+        },
+        neon: {
+          cyan: '#00f3ff',
+          purple: '#b026ff',
+          pink: '#ff006e',
+          green: '#00ff88',
+        },
+      },
+      backgroundColor: {
+        primary: 'rgb(15 23 42)',
+        secondary: 'rgb(30 41 59)',
+        tertiary: 'rgb(51 65 85)',
+      },
+      backdropBlur: {
+        xs: '2px',
+        sm: '4px',
+      },
+      boxShadow: {
+        'glow': '0 0 20px rgba(14, 165, 233, 0.15)',
+        'glow-primary': '0 0 30px rgba(14, 165, 233, 0.25)',
+        'glow-accent': '0 0 30px rgba(34, 197, 94, 0.25)',
+        'glow-danger': '0 0 30px rgba(239, 68, 68, 0.25)',
+        'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+        'glass-dark': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+      },
+      borderRadius: {
+        '3xl': '1.5rem',
+        '4xl': '2rem',
+      },
+      animation: {
+        'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'float': 'float 3s ease-in-out infinite',
+        'shimmer': 'shimmer 2s linear infinite',
+        'gradient-shift': 'gradient-shift 3s ease infinite',
+      },
+      keyframes: {
+        'pulse-glow': {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(14, 165, 233, 0.1)' },
+          '50%': { boxShadow: '0 0 40px rgba(14, 165, 233, 0.3)' },
+        },
+        'float': {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
+        },
+        'shimmer': {
+          '0%': { backgroundPosition: '-1000px 0' },
+          '100%': { backgroundPosition: '1000px 0' },
+        },
+        'gradient-shift': {
+          '0%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+          '100%': { backgroundPosition: '0% 50%' },
+        },
+      },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+        'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
       },
     },
   },
