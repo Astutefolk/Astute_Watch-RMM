@@ -22,7 +22,14 @@ type AlertSeverity = typeof AlertSeverity[keyof typeof AlertSeverity];
 
 export class DeviceService {
   private prisma = getPrisma();
-  private redis = getRedisClient();
+  private redis: ReturnType<typeof getRedisClient> | null = null;
+
+  private getRedis() {
+    if (!this.redis) {
+      this.redis = getRedisClient();
+    }
+    return this.redis;
+  }
 
   async registerDevice(deviceId: string, orgId: string, osVersion?: string) {
     // Check if device already exists
@@ -93,7 +100,7 @@ export class DeviceService {
 
     // Cache last metrics in Redis for quick access
     const cacheKey = `metrics:${deviceId}`;
-    await this.redis.setEx(
+    await this.getRedis().setEx(
       cacheKey,
       60, // 60 seconds TTL
       JSON.stringify({ cpu, ram, disk, timestamp: new Date().toISOString() })
@@ -190,7 +197,7 @@ export class DeviceService {
     });
 
     // Publish alert via Redis for WebSocket broadcast
-    await this.redis.publish(
+    await this.getRedis().publish(
       `alerts:${orgId}`,
       JSON.stringify({
         event: 'alert:created',

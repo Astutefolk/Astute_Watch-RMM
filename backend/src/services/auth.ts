@@ -12,7 +12,14 @@ import {
 
 export class AuthService {
   private prisma = getPrisma();
-  private redis = getRedisClient();
+  private redis: ReturnType<typeof getRedisClient> | null = null;
+
+  private getRedis() {
+    if (!this.redis) {
+      this.redis = getRedisClient();
+    }
+    return this.redis;
+  }
 
   async register(email: string, password: string, organizationName: string) {
     // Validate input
@@ -96,7 +103,7 @@ export class AuthService {
 
     // Cache user session in Redis
     const sessionKey = `session:${user.id}`;
-    await this.redis.setEx(sessionKey, 7 * 24 * 60 * 60, JSON.stringify({
+    await this.getRedis().setEx(sessionKey, 7 * 24 * 60 * 60, JSON.stringify({
       userId: user.id,
       email: user.email,
       orgId: user.organizationId,

@@ -2,7 +2,14 @@ import { Request, Response } from 'express';
 import { AuthService } from '@/services/auth';
 import { generateAccessToken, generateRefreshToken } from '@/utils/helpers';
 
-const authService = new AuthService();
+let authService: AuthService | null = null;
+
+function getAuthService() {
+  if (!authService) {
+    authService = new AuthService();
+  }
+  return authService;
+}
 
 export async function register(req: Request, res: Response) {
   try {
@@ -14,7 +21,7 @@ export async function register(req: Request, res: Response) {
       });
     }
 
-    const result = await authService.register(email, password, organizationName);
+    const result = await getAuthService().register(email, password, organizationName);
 
     // Generate tokens
     const accessToken = generateAccessToken({
@@ -52,7 +59,7 @@ export async function login(req: Request, res: Response) {
       });
     }
 
-    const user = await authService.login(email, password);
+    const user = await getAuthService().login(email, password);
 
     // Generate tokens
     const accessToken = generateAccessToken({
@@ -95,7 +102,7 @@ export async function refreshToken(req: Request, res: Response) {
       return res.status(401).json({ error: 'Invalid or expired refresh token' });
     }
 
-    const user = await authService.findUserById(payload.userId);
+    const user = await getAuthService().findUserById(payload.userId);
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
     }
@@ -120,7 +127,7 @@ export async function me(req: Request, res: Response) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const user = await authService.findUserById(req.user.userId);
+    const user = await getAuthService().findUserById(req.user.userId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }

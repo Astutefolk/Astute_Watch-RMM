@@ -3,7 +3,15 @@ import { DeviceService } from '@/services/device';
 import { getPaginationParams } from '@/utils/helpers';
 import { getPrisma } from '@/database/prisma';
 
-const deviceService = new DeviceService();
+let deviceService: DeviceService | null = null;
+
+function getDeviceService() {
+  if (!deviceService) {
+    deviceService = new DeviceService();
+  }
+  return deviceService;
+}
+
 const prisma = getPrisma();
 
 export async function heartbeat(req: Request, res: Response) {
@@ -26,7 +34,7 @@ export async function heartbeat(req: Request, res: Response) {
     }
 
     // Record heartbeat
-    const device = await deviceService.recordHeartbeat(
+    const device = await getDeviceService().recordHeartbeat(
       deviceId,
       apiKeyRecord.organizationId,
       cpu,
@@ -55,7 +63,7 @@ export async function getDevices(req: Request, res: Response) {
     const { page, limit } = req.query;
     const { skip, take } = getPaginationParams(page as string, limit as string);
 
-    const { devices, total } = await deviceService.getDevices(req.orgId, skip, take);
+    const { devices, total } = await getDeviceService().getDevices(req.orgId, skip, take);
 
     return res.json({
       devices,
@@ -77,7 +85,7 @@ export async function getDevice(req: Request, res: Response) {
     }
 
     const { id } = req.params;
-    const device = await deviceService.getDeviceById(id, req.orgId);
+    const device = await getDeviceService().getDeviceById(id, req.orgId);
 
     return res.json(device);
   } catch (error: any) {
@@ -97,7 +105,7 @@ export async function deleteDevice(req: Request, res: Response) {
     }
 
     const { id } = req.params;
-    const device = await deviceService.deleteDevice(id, req.orgId);
+    const device = await getDeviceService().deleteDevice(id, req.orgId);
 
     return res.json({ message: 'Device deleted', device });
   } catch (error: any) {
@@ -112,7 +120,7 @@ export async function getStats(req: Request, res: Response) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const stats = await deviceService.getDeviceStats(req.orgId);
+    const stats = await getDeviceService().getDeviceStats(req.orgId);
 
     return res.json(stats);
   } catch (error: any) {
@@ -127,7 +135,7 @@ export async function getDashboard(req: Request, res: Response) {
     }
 
     const [deviceStats, recentAlerts, alertStats] = await Promise.all([
-      deviceService.getDeviceStats(req.orgId),
+      getDeviceService().getDeviceStats(req.orgId),
       prisma.alert.findMany({
         where: { orgId: req.orgId },
         orderBy: { createdAt: 'desc' },

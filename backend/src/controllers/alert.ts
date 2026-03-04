@@ -2,7 +2,14 @@ import { Request, Response } from 'express';
 import { AlertService } from '@/services/alert';
 import { getPaginationParams } from '@/utils/helpers';
 
-const alertService = new AlertService();
+let alertService: AlertService | null = null;
+
+function getAlertService() {
+  if (!alertService) {
+    alertService = new AlertService();
+  }
+  return alertService;
+}
 
 export async function getAlerts(req: Request, res: Response) {
   try {
@@ -13,7 +20,7 @@ export async function getAlerts(req: Request, res: Response) {
     const { page, limit, unresolved } = req.query;
     const { skip, take } = getPaginationParams(page as string, limit as string);
 
-    const { alerts, total } = await alertService.getAlerts(
+    const { alerts, total } = await getAlertService().getAlerts(
       req.orgId,
       skip,
       take,
@@ -40,7 +47,7 @@ export async function getAlert(req: Request, res: Response) {
     }
 
     const { id } = req.params;
-    const alert = await alertService.getAlertById(id, req.orgId);
+    const alert = await getAlertService().getAlertById(id, req.orgId);
 
     return res.json(alert);
   } catch (error: any) {
@@ -56,7 +63,7 @@ export async function resolveAlert(req: Request, res: Response) {
     }
 
     const { id } = req.params;
-    const alert = await alertService.resolveAlert(id, req.orgId);
+    const alert = await getAlertService().resolveAlert(id, req.orgId);
 
     return res.json(alert);
   } catch (error: any) {
@@ -71,7 +78,7 @@ export async function getStats(req: Request, res: Response) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const stats = await alertService.getStats(req.orgId);
+    const stats = await getAlertService().getStats(req.orgId);
 
     return res.json(stats);
   } catch (error: any) {
