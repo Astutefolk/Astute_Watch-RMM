@@ -24,6 +24,7 @@ export default function DashboardPage() {
     setError,
     resolveAlert,
   } = useDashboardStore();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
