@@ -50,7 +50,7 @@ export class AlertService {
   }
 
   async resolveAlert(alertId: string, orgId: string) {
-    const alert = await this.getAlertById(alertId, orgId);
+    await this.getAlertById(alertId, orgId);
 
     return this.prisma.alert.update({
       where: { id: alertId },

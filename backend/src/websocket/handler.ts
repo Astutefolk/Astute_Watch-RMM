@@ -131,7 +131,8 @@ export async function setupRedisSubscriber() {
   const redis = getRedisClient();
   const subscriber = redis.duplicate();
 
-  subscriber.on('message', (channel: string, message: string) => {
+  // Subscribe to alert channels for all orgs
+  await subscriber.pSubscribe('alerts:*', (message: string, channel: string) => {
     if (channel.startsWith('alerts:')) {
       const orgId = channel.split(':')[1];
       const data = JSON.parse(message);
@@ -141,14 +142,10 @@ export async function setupRedisSubscriber() {
       }
     }
   });
-
-  // Subscribe to alert channels for all orgs
-  await subscriber.pSubscribe('alerts:*');
 }
 
 // Check offline devices every 2 minutes and broadcast status changes
 export async function setupOfflineDeviceChecker() {
-  const redis = getRedisClient();
   const { envConfig } = await import('@/config/env');
 
   setInterval(async () => {

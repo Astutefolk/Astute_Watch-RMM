@@ -2,7 +2,23 @@ import { getPrisma } from '@/database/prisma';
 import { getRedisClient } from '@/config/redis';
 import { envConfig } from '@/config/env';
 import { AppError } from '@/utils/helpers';
-import { AlertType, AlertSeverity } from '@prisma/client';
+
+const AlertType = {
+  CPU_HIGH: 'CPU_HIGH',
+  RAM_HIGH: 'RAM_HIGH',
+  DISK_HIGH: 'DISK_HIGH',
+  DEVICE_OFFLINE: 'DEVICE_OFFLINE',
+  DEVICE_ONLINE: 'DEVICE_ONLINE',
+} as const;
+
+const AlertSeverity = {
+  INFO: 'INFO',
+  WARNING: 'WARNING',
+  CRITICAL: 'CRITICAL',
+} as const;
+
+type AlertType = typeof AlertType[keyof typeof AlertType];
+type AlertSeverity = typeof AlertSeverity[keyof typeof AlertSeverity];
 
 export class DeviceService {
   private prisma = getPrisma();

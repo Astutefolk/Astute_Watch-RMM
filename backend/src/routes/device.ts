@@ -1,7 +1,6 @@
 import express from 'express';
 import * as deviceController from '@/controllers/device';
-import { authMiddleware } from '@/middleware/auth';
-import { apiKeyMiddleware, authMiddleware as authHeaderCheck } from '@/middleware/auth';
+import { authMiddleware, apiKeyMiddleware } from '@/middleware/auth';
 import { agentLimiter } from '@/middleware/rateLimit';
 
 const router = express.Router();

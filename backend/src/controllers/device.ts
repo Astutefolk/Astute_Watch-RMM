@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import { DeviceService } from '@/services/device';
 import { getPaginationParams } from '@/utils/helpers';
-import { hashApiKey } from '@/utils/helpers';
 import { getPrisma } from '@/database/prisma';
 
 const deviceService = new DeviceService();
@@ -36,14 +35,14 @@ export async function heartbeat(req: Request, res: Response) {
       osVersion
     );
 
-    res.json({
+    return res.json({
       deviceId: device.deviceId,
       deviceDbId: device.id,
       nextHeartbeatInterval: 30000,
     });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ error: error.message });
+    return res.status(statusCode).json({ error: error.message });
   }
 }
 
@@ -58,7 +57,7 @@ export async function getDevices(req: Request, res: Response) {
 
     const { devices, total } = await deviceService.getDevices(req.orgId, skip, take);
 
-    res.json({
+    return res.json({
       devices,
       pagination: {
         total,
@@ -67,7 +66,7 @@ export async function getDevices(req: Request, res: Response) {
       },
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
 
@@ -80,10 +79,10 @@ export async function getDevice(req: Request, res: Response) {
     const { id } = req.params;
     const device = await deviceService.getDeviceById(id, req.orgId);
 
-    res.json(device);
+    return res.json(device);
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ error: error.message });
+    return res.status(statusCode).json({ error: error.message });
   }
 }
 
@@ -100,10 +99,10 @@ export async function deleteDevice(req: Request, res: Response) {
     const { id } = req.params;
     const device = await deviceService.deleteDevice(id, req.orgId);
 
-    res.json({ message: 'Device deleted', device });
+    return res.json({ message: 'Device deleted', device });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ error: error.message });
+    return res.status(statusCode).json({ error: error.message });
   }
 }
 
@@ -115,9 +114,9 @@ export async function getStats(req: Request, res: Response) {
 
     const stats = await deviceService.getDeviceStats(req.orgId);
 
-    res.json(stats);
+    return res.json(stats);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
 
@@ -148,7 +147,7 @@ export async function getDashboard(req: Request, res: Response) {
       }),
     ]);
 
-    res.json({
+    return res.json({
       stats: {
         totalDevices: deviceStats.total,
         onlineDevices: deviceStats.online,
@@ -158,6 +157,6 @@ export async function getDashboard(req: Request, res: Response) {
       recentAlerts,
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }

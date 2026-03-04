@@ -20,7 +20,7 @@ export async function getAlerts(req: Request, res: Response) {
       unresolved === 'true'
     );
 
-    res.json({
+    return res.json({
       alerts,
       pagination: {
         total,
@@ -29,7 +29,7 @@ export async function getAlerts(req: Request, res: Response) {
       },
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
 
@@ -42,10 +42,10 @@ export async function getAlert(req: Request, res: Response) {
     const { id } = req.params;
     const alert = await alertService.getAlertById(id, req.orgId);
 
-    res.json(alert);
+    return res.json(alert);
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ error: error.message });
+    return res.status(statusCode).json({ error: error.message });
   }
 }
 
@@ -58,10 +58,10 @@ export async function resolveAlert(req: Request, res: Response) {
     const { id } = req.params;
     const alert = await alertService.resolveAlert(id, req.orgId);
 
-    res.json(alert);
+    return res.json(alert);
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ error: error.message });
+    return res.status(statusCode).json({ error: error.message });
   }
 }
 
@@ -73,8 +73,8 @@ export async function getStats(req: Request, res: Response) {
 
     const stats = await alertService.getStats(req.orgId);
 
-    res.json(stats);
+    return res.json(stats);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }

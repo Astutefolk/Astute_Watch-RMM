@@ -1,7 +1,14 @@
 import rateLimit from 'express-rate-limit';
 import { getRedisClient } from '@/config/redis';
 import { envConfig } from '@/config/env';
-import RedisStore from 'rate-limit-redis';
+let RedisStore: any;
+try {
+  // Optional dependency; fallback to in-memory limiter if unavailable
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  RedisStore = require('rate-limit-redis');
+} catch {
+  RedisStore = null;
+}
 
 export const globalLimiter = rateLimit({
   windowMs: envConfig.rateLimitWindowMs,
@@ -31,6 +38,9 @@ export const agentLimiter = rateLimit({
 export const createRedisLimiter = () => {
   try {
     const redisClient = getRedisClient();
+    if (!RedisStore) {
+      return globalLimiter;
+    }
     return rateLimit({
       store: new RedisStore({
         client: redisClient as any,

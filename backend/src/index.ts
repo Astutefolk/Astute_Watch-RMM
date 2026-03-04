@@ -7,11 +7,10 @@ import { envConfig } from '@/config/env';
 import { initDb, closeDb } from '@/database/prisma';
 import { initRedis, closeRedis } from '@/config/redis';
 import {
-  authMiddleware,
   errorHandler,
   notFoundHandler,
 } from '@/middleware/auth';
-import { globalLimiter, createRedisLimiter } from '@/middleware/rateLimit';
+import { globalLimiter } from '@/middleware/rateLimit';
 import authRoutes from '@/routes/auth';
 import deviceRoutes from '@/routes/device';
 import alertRoutes from '@/routes/alert';
@@ -68,14 +67,14 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(globalLimiter);
 
 // Request logging (simple)
-app.use((req: Request, res: Response, next) => {
+app.use((req: Request, _res: Response, next) => {
   console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
   next();
 });
 
 // ============ HEALTH CHECK ============
 
-app.get('/health', (req: Request, res: Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),

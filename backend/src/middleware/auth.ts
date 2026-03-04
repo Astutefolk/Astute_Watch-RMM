@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken } from '@/utils/helpers';
-import { getPrisma } from '@/database/prisma';
 import { TokenPayload } from '@/types/index';
 
 declare global {
@@ -16,7 +15,7 @@ export function authMiddleware(
   req: Request,
   res: Response,
   next: NextFunction
-) {
+): Response | void {
   try {
     // Get token from header
     const authHeader = req.headers.authorization;
@@ -33,9 +32,9 @@ export function authMiddleware(
 
     req.user = payload;
     req.orgId = payload.orgId;
-    next();
+    return next();
   } catch (error) {
-    res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 }
 
@@ -43,18 +42,18 @@ export function adminMiddleware(
   req: Request,
   res: Response,
   next: NextFunction
-) {
+): Response | void {
   if (!req.user || req.user.role !== 'ADMIN') {
     return res.status(403).json({ error: 'Forbidden - Admin access required' });
   }
-  next();
+  return next();
 }
 
 export function apiKeyMiddleware(
   req: Request,
   res: Response,
   next: NextFunction
-) {
+): Response | void {
   try {
     const apiKey = req.headers['x-api-key'] as string;
     if (!apiKey) {
@@ -68,31 +67,31 @@ export function apiKeyMiddleware(
 
     // Store for use in controller
     req.headers['x-api-key'] = apiKey;
-    next();
+    return next();
   } catch (error) {
-    res.status(401).json({ error: 'Invalid API key' });
+    return res.status(401).json({ error: 'Invalid API key' });
   }
 }
 
 export function errorHandler(
   err: any,
-  req: Request,
+  _req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) {
   console.error('Error:', err);
 
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal server error';
 
-  res.status(statusCode).json({
+  return res.status(statusCode).json({
     error: message,
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 }
 
 export function notFoundHandler(req: Request, res: Response) {
-  res.status(404).json({
+  return res.status(404).json({
     error: 'Endpoint not found',
     path: req.path,
   });

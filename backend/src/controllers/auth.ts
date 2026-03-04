@@ -26,7 +26,7 @@ export async function register(req: Request, res: Response) {
 
     const refreshToken = generateRefreshToken(result.userId);
 
-    res.status(201).json({
+    return res.status(201).json({
       accessToken,
       refreshToken,
       user: {
@@ -38,7 +38,7 @@ export async function register(req: Request, res: Response) {
     });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ error: error.message });
+    return res.status(statusCode).json({ error: error.message });
   }
 }
 
@@ -64,7 +64,7 @@ export async function login(req: Request, res: Response) {
 
     const refreshToken = generateRefreshToken(user.userId);
 
-    res.json({
+    return res.json({
       accessToken,
       refreshToken,
       user: {
@@ -76,7 +76,7 @@ export async function login(req: Request, res: Response) {
     });
   } catch (error: any) {
     const statusCode = error.statusCode || 500;
-    res.status(statusCode).json({ error: error.message });
+    return res.status(statusCode).json({ error: error.message });
   }
 }
 
@@ -108,9 +108,9 @@ export async function refreshToken(req: Request, res: Response) {
       role: user.role as any,
     });
 
-    res.json({ accessToken });
+    return res.json({ accessToken });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
 
@@ -125,8 +125,8 @@ export async function me(req: Request, res: Response) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json({ user });
+    return res.json({ user });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
