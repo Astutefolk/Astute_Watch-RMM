@@ -53,7 +53,7 @@ type Agent struct {
 // NewAgent creates a new agent instance
 func NewAgent(config Config) *Agent {
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Create HTTP client with custom transport (skip SSL verification for self-signed certs)
 	client := &http.Client{
 		Timeout: 30 * time.Second,
