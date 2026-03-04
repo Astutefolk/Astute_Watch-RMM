@@ -1,0 +1,66 @@
+#!/bin/bash
+
+# DATTO RMM - Testing Quick Reference
+# Run this script to see all available testing commands
+
+echo "╔═══════════════════════════════════════════════════════════════╗"
+echo "║          DATTO RMM - Testing Commands Reference              ║"
+echo "╚═══════════════════════════════════════════════════════════════╝"
+echo ""
+
+echo "📋 BACKEND TESTS"
+echo "   ─────────────────────────────────────────────────────────────"
+echo "   cd backend"
+echo ""
+echo "   npm test                    # Run all unit tests"
+echo "   npm run test:watch          # Watch mode (re-run on changes)"
+echo "   npm run test:coverage       # Generate coverage report"
+echo "   npm test -- helpers.test    # Run specific test file"
+echo ""
+
+echo "📋 FRONTEND TESTS"
+echo "   ─────────────────────────────────────────────────────────────"
+echo "   cd frontend"
+echo ""
+echo "   npm test                    # Run all unit tests"
+echo "   npm run test:watch          # Watch mode (re-run on changes)"
+echo "   npm run test:coverage       # Generate coverage report"
+echo "   npm test UI.test            # Run specific test file"
+echo ""
+
+echo "🔍 TEST COVERAGE VIEWING"
+echo "   ─────────────────────────────────────────────────────────────"
+echo "   # Backend"
+echo "   cd backend && npm run test:coverage && open coverage/lcov-report/index.html"
+echo ""
+echo "   # Frontend"
+echo "   cd frontend && npm run test:coverage && open coverage/lcov-report/index.html"
+echo ""
+
+echo "📝 EXAMPLE TEST FILES CREATED"
+echo "   ─────────────────────────────────────────────────────────────"
+echo "   • backend/src/utils/helpers.test.ts          (Utility functions)"
+echo "   • frontend/src/components/UI.test.tsx        (UI components)"
+echo ""
+
+echo "🎯 RECOMMENDED TESTING WORKFLOW"
+echo "   ─────────────────────────────────────────────────────────────"
+echo "   1. cd backend && npm install"
+echo "   2. cd ../frontend && npm install"
+echo "   3. npm run test:watch                        (Run all tests)"
+echo "   4. Create/modify code"
+echo "   5. Add corresponding tests"
+echo "   6. Watch tests pass"
+echo ""
+
+echo "📚 DOCUMENTATION"
+echo "   ─────────────────────────────────────────────────────────────"
+echo "   See TESTING.md for comprehensive testing guide"
+echo "   See TEST_QUICK_START.md for quick reference"
+echo ""
+
+echo "✅ VERIFY SETUP"
+echo "   ─────────────────────────────────────────────────────────────"
+echo "   cd backend && npm test -- --version          # Backend ready?"
+echo "   cd ../frontend && npm test -- --version      # Frontend ready?"
+echo ""

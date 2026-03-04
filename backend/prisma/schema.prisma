@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+  devices    Device[]
+  apiKeys    ApiKey[]
+  alerts     Alert[]
+  metrics    DeviceMetrics[]
+
+  @@map("organizations")
+}
+
+model User {
+  id       String @id @default(cuid())
+  email    String @unique
+  password String
+  role     Role   @default(TECHNICIAN)
+
+  orgId Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@map("users")
+}
+
+model ApiKey {
+  id       String  @id @default(cuid())
+  key      String  @unique
+  name     String
+  isActive Boolean @default(true)
+
+  orgId Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([key])
+  @@map("api_keys")
+}
+
+model Device {
+  id           String  @id @default(cuid())
+  deviceId     String  @unique // ID from agent
+  name         String
+  osVersion    String?
+  lastSeen     DateTime?
+  isOnline     Boolean @default(false)
+
+  orgId Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+
+  metrics DeviceMetrics[]
+  alerts  Alert[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([deviceId])
+  @@index([lastSeen])
+  @@map("devices")
+}
+
+model DeviceMetrics {
+  id        String @id @default(cuid())
+  cpu       Float  // CPU percentage 0-100
+  ram       Float  // RAM percentage 0-100
+  disk      Float  // Disk percentage 0-100
+
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  deviceId String
+
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId String
+
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([timestamp])
+  @@index([orgId])
+  @@map("device_metrics")
+}
+
+model Alert {
+  id        String        @id @default(cuid())
+  type      AlertType
+  severity  AlertSeverity
+  message   String
+  isResolved Boolean       @default(false)
+
+  device   Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  deviceId String
+
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  orgId String
+
+  createdAt  DateTime @default(now())
+  resolvedAt DateTime?
+
+  @@index([deviceId])
+  @@index([orgId])
+  @@index([createdAt])
+  @@map("alerts")
+}
+
+enum Role {
+  ADMIN
+  TECHNICIAN
+}
+
+enum AlertType {
+  CPU_HIGH
+  RAM_HIGH
+  DISK_HIGH
+  DEVICE_OFFLINE
+  DEVICE_ONLINE
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
