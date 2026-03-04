@@ -13,6 +13,10 @@ export interface Device {
   isOnline: boolean;
   lastSeen: string | null;
   metrics?: DeviceMetrics;
+  status?: 'online' | 'offline';
+  ipAddress?: string;
+  os?: string;
+  agentVersion?: string;
 }
 
 export interface DeviceMetrics {
@@ -32,6 +36,9 @@ export interface Alert {
   isResolved: boolean;
   createdAt: string;
   resolvedAt: string | null;
+  title?: string;
+  description?: string;
+  deviceName?: string;
 }
 
 export interface DashboardStats {

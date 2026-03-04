@@ -30,30 +30,36 @@ export function DeviceCard({ device }: { device: Device }) {
           <div>
             <p className="text-xs text-gray-500 uppercase font-semibold">CPU</p>
             <p className="text-2xl font-bold text-blue-600">{metrics.cpu.toFixed(1)}%</p>
-            <div className="mt-2 h-1 bg-gray-200 rounded">
+            <div className="mt-2 h-1 bg-gray-200 rounded overflow-hidden">
               <div
                 className="h-full bg-blue-600 rounded"
-                style={{ width: `${Math.min(100, metrics.cpu)}%` }}
+                style={{
+                  width: `${Math.min(100, metrics.cpu)}%`,
+                } as React.CSSProperties}
               />
             </div>
           </div>
           <div>
             <p className="text-xs text-gray-500 uppercase font-semibold">RAM</p>
             <p className="text-2xl font-bold text-green-600">{metrics.ram.toFixed(1)}%</p>
-            <div className="mt-2 h-1 bg-gray-200 rounded">
+            <div className="mt-2 h-1 bg-gray-200 rounded overflow-hidden">
               <div
                 className="h-full bg-green-600 rounded"
-                style={{ width: `${Math.min(100, metrics.ram)}%` }}
+                style={{
+                  width: `${Math.min(100, metrics.ram)}%`,
+                } as React.CSSProperties}
               />
             </div>
           </div>
           <div>
             <p className="text-xs text-gray-500 uppercase font-semibold">DISK</p>
             <p className="text-2xl font-bold text-orange-600">{metrics.disk.toFixed(1)}%</p>
-            <div className="mt-2 h-1 bg-gray-200 rounded">
+            <div className="mt-2 h-1 bg-gray-200 rounded overflow-hidden">
               <div
                 className="h-full bg-orange-600 rounded"
-                style={{ width: `${Math.min(100, metrics.disk)}%` }}
+                style={{
+                  width: `${Math.min(100, metrics.disk)}%`,
+                } as React.CSSProperties}
               />
             </div>
           </div>

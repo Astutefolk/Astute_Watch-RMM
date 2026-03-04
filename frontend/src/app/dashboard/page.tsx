@@ -149,7 +149,7 @@ export default function DashboardPage() {
       </div>
 
       {/* System Health */}
-      <Card className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+      <Card className="animate-slide-up" style={{ animationDelay: '100ms' } as React.CSSProperties}>
         <Card.Header>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-sky-500" />
@@ -170,7 +170,9 @@ export default function DashboardPage() {
                   ? 'bg-yellow-500'
                   : 'bg-red-500'
               }`}
-              style={{ width: `${systemHealth}%` }}
+              style={{
+                width: `${systemHealth}%`,
+              } as React.CSSProperties}
             />
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -184,7 +186,7 @@ export default function DashboardPage() {
       </Card>
 
       {/* Tabs Section */}
-      <Tabs defaultValue="overview" onChange={setActiveTab} className="animate-slide-up" style={{ animationDelay: '200ms' }}>
+      <Tabs defaultValue="overview" onChange={setActiveTab} className="animate-slide-up" style={{ animationDelay: '200ms' } as React.CSSProperties}>
         <Tabs.List>
           <Tabs.Trigger value="overview">Overview</Tabs.Trigger>
           <Tabs.Trigger value="alerts">Alerts</Tabs.Trigger>
@@ -229,19 +231,19 @@ export default function DashboardPage() {
                     className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
                     <div className="flex items-center gap-3 flex-1">
-                      {alert.severity === 'critical' ? (
+                      {alert.severity === 'CRITICAL' ? (
                         <AlertTriangle className="w-5 h-5 text-red-500" />
-                      ) : alert.severity === 'warning' ? (
+                      ) : alert.severity === 'WARNING' ? (
                         <AlertTriangle className="w-5 h-5 text-yellow-500" />
                       ) : (
                         <Activity className="w-5 h-5 text-blue-500" />
                       )}
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-white">{alert.title}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{alert.title || alert.message}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">{alert.deviceName || 'System'}</p>
                       </div>
                     </div>
-                    <Badge variant={alert.severity === 'critical' ? 'danger' : 'warning'}>
+                    <Badge variant={alert.severity === 'CRITICAL' ? 'danger' : 'warning'}>
                       {alert.severity}
                     </Badge>
                   </div>
@@ -276,8 +278,8 @@ export default function DashboardPage() {
                       className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-sky-300 dark:hover:border-sky-600 transition-colors"
                     >
                       <div className="flex-1">
-                        <p className="font-medium text-gray-900 dark:text-white">{alert.title}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{alert.description}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">{alert.title || alert.message}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{alert.description || alert.message}</p>
                       </div>
                       <Button
                         size="sm"
@@ -317,18 +319,22 @@ export default function DashboardPage() {
                   <Card.Content className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h4 className="font-semibold text-gray-900 dark:text-white">{device.name}</h4>
-                      <Badge variant={device.status === 'online' ? 'success' : 'danger'}>
-                        {device.status}
+                      <Badge variant={device.isOnline ? 'success' : 'danger'}>
+                        {device.isOnline ? 'Online' : 'Offline'}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{device.ipAddress}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{device.ipAddress || 'N/A'}</p>
                     <div className="flex gap-2">
-                      <Badge variant="info" size="sm">
-                        {device.os}
-                      </Badge>
-                      <Badge variant="default" size="sm">
-                        {device.agentVersion}
-                      </Badge>
+                      {device.os && (
+                        <Badge variant="info" size="sm">
+                          {device.os}
+                        </Badge>
+                      )}
+                      {device.agentVersion && (
+                        <Badge variant="default" size="sm">
+                          {device.agentVersion}
+                        </Badge>
+                      )}
                     </div>
                   </Card.Content>
                 </Card>

@@ -268,11 +268,10 @@ interface TabsContextType {
 
 const TabsContext = React.createContext<TabsContextType | undefined>(undefined);
 
-interface TabsProps {
+interface TabsProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
   defaultValue?: string;
   onChange?: (value: string) => void;
   children: React.ReactNode;
-  className?: string;
 }
 
 interface TabsListProps {
@@ -340,7 +339,7 @@ function TabsContent({ value, children, className }: TabsContentProps) {
   );
 }
 
-export function Tabs({ defaultValue = '', onChange, children, className }: TabsProps) {
+export function Tabs({ defaultValue = '', onChange, children, className, ...props }: TabsProps) {
   const [value, setValue] = React.useState(defaultValue);
 
   const handleChange = (newValue: string) => {
@@ -350,7 +349,7 @@ export function Tabs({ defaultValue = '', onChange, children, className }: TabsP
 
   return (
     <TabsContext.Provider value={{ value, onChange: handleChange }}>
-      <div className={className}>
+      <div className={className} {...props}>
         {children}
       </div>
     </TabsContext.Provider>

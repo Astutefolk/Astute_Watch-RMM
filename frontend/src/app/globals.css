@@ -153,12 +153,14 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 /* Glass-morphism effect */
 .glass {
   background: rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .glass-dark {
   background: rgba(15, 23, 42, 0.4);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(14, 165, 233, 0.1);
 }
@@ -205,8 +207,8 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 
 /* Backdrop blur */
 .backdrop-blur-glass {
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
 }
 
 /* Border gradient */

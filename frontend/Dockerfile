@@ -1,6 +1,9 @@
-FROM node:20-alpine
+FROM node:20-alpine3.19 AS base
 
 WORKDIR /app
+
+# Update base image to patch known vulnerabilities
+RUN apk update && apk upgrade && rm -rf /var/cache/apk/*
 
 # Install dependencies
 COPY frontend/package*.json ./
