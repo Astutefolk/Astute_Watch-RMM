@@ -11,11 +11,6 @@ import {
   notFoundHandler,
 } from '@/middleware/auth';
 import { globalLimiter } from '@/middleware/rateLimit';
-import {
-  initWebSocket,
-  setupRedisSubscriber,
-  setupOfflineDeviceChecker,
-} from '@/websocket/handler';
 
 const app = express();
 const httpServer = createServer(app);
@@ -32,6 +27,13 @@ async function initialize() {
 
     await initRedis();
     console.log('✅ Redis connected');
+
+    // Import websocket handler AFTER databases are initialized
+    const {
+      initWebSocket,
+      setupRedisSubscriber,
+      setupOfflineDeviceChecker,
+    } = await import('@/websocket/handler');
 
     // Initialize WebSocket
     initWebSocket(httpServer);

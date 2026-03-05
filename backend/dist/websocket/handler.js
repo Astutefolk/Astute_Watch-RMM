@@ -44,8 +44,14 @@ const socket_io_1 = require("socket.io");
 const redis_1 = require("@/config/redis");
 const helpers_1 = require("@/utils/helpers");
 const prisma_1 = require("@/database/prisma");
-const prisma = (0, prisma_1.getPrisma)();
+let prisma = null;
 let io;
+function getPrismaClient() {
+    if (!prisma) {
+        prisma = (0, prisma_1.getPrisma)();
+    }
+    return prisma;
+}
 function initWebSocket(httpServer) {
     io = new socket_io_1.Server(httpServer, {
         cors: {
@@ -155,7 +161,7 @@ async function setupOfflineDeviceChecker() {
         try {
             const offlineThreshold = new Date(Date.now() - envConfig.agentOfflineThreshold);
             // Find devices that should be offline
-            const devicesToMarkOffline = await prisma.device.findMany({
+            const devicesToMarkOffline = await getPrismaClient().device.findMany({
                 where: {
                     isOnline: true,
                     lastSeen: {
@@ -165,7 +171,7 @@ async function setupOfflineDeviceChecker() {
             });
             // Update devices and broadcast
             for (const device of devicesToMarkOffline) {
-                await prisma.device.update({
+                await getPrismaClient().device.update({
                     where: { id: device.id },
                     data: { isOnline: false },
                 });

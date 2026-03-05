@@ -3,7 +3,7 @@ import { getRedisClient } from '@/config/redis';
 import { verifyAccessToken } from '@/utils/helpers';
 import { getPrisma } from '@/database/prisma';
 
-const prisma = getPrisma();
+let prisma: ReturnType<typeof getPrisma> | null = null;
 let io: Server;
 
 interface SocketUser {
@@ -17,6 +17,13 @@ declare module 'socket.io' {
   interface Socket {
     user?: SocketUser;
   }
+}
+
+function getPrismaClient() {
+  if (!prisma) {
+    prisma = getPrisma();
+  }
+  return prisma;
 }
 
 export function initWebSocket(httpServer: any) {
@@ -155,7 +162,7 @@ export async function setupOfflineDeviceChecker() {
       );
 
       // Find devices that should be offline
-      const devicesToMarkOffline = await prisma.device.findMany({
+      const devicesToMarkOffline = await getPrismaClient().device.findMany({
         where: {
           isOnline: true,
           lastSeen: {
@@ -166,7 +173,7 @@ export async function setupOfflineDeviceChecker() {
 
       // Update devices and broadcast
       for (const device of devicesToMarkOffline) {
-        await prisma.device.update({
+        await getPrismaClient().device.update({
           where: { id: device.id },
           data: { isOnline: false },
         });

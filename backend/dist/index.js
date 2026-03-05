@@ -46,7 +46,6 @@ const prisma_1 = require("@/database/prisma");
 const redis_1 = require("@/config/redis");
 const auth_1 = require("@/middleware/auth");
 const rateLimit_1 = require("@/middleware/rateLimit");
-const handler_1 = require("@/websocket/handler");
 const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
 // ============ INITIALIZATION ============
@@ -58,14 +57,16 @@ async function initialize() {
         console.log('✅ Database connected');
         await (0, redis_1.initRedis)();
         console.log('✅ Redis connected');
+        // Import websocket handler AFTER databases are initialized
+        const { initWebSocket, setupRedisSubscriber, setupOfflineDeviceChecker, } = await Promise.resolve().then(() => __importStar(require('@/websocket/handler')));
         // Initialize WebSocket
-        (0, handler_1.initWebSocket)(httpServer);
+        initWebSocket(httpServer);
         console.log('✅ WebSocket initialized');
         // Setup Redis subscriber for real-time updates
-        await (0, handler_1.setupRedisSubscriber)();
+        await setupRedisSubscriber();
         console.log('✅ Redis subscriber setup');
         // Setup offline device checker
-        await (0, handler_1.setupOfflineDeviceChecker)();
+        await setupOfflineDeviceChecker();
         console.log('✅ Offline device checker setup');
         // Register routes AFTER all services are initialized
         const authRoutes = (await Promise.resolve().then(() => __importStar(require('@/routes/auth')))).default;
