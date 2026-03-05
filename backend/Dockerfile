@@ -47,6 +47,5 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 EXPOSE 4000
 
-# Start backend using entrypoint script
-CMD ["node", "dist/index.js"]
-CMD ["node", "dist/index.js"]
+# Start backend with tsconfig-paths for alias resolution
+CMD ["node", "-r", "tsconfig-paths/register", "dist/index.js"]
