@@ -14,12 +14,18 @@ COPY frontend/src ./src
 COPY frontend/public ./public
 COPY frontend/tsconfig.json frontend/next.config.js frontend/tailwind.config.ts ./
 
+# Set build-time environment variables (these are baked into the build)
+ARG NEXT_PUBLIC_API_URL=http://localhost:3000/api/v1
+ARG NEXT_PUBLIC_WS_URL=http://localhost:3000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
+
 # Build Next.js
 RUN npm run build
 
 EXPOSE 3001
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:3001/api/health || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost:3001 || exit 1
 
 CMD ["npm", "start"]
