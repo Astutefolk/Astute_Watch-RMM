@@ -100,7 +100,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # Nginx Reverse Proxy (Optional - for production)
+  # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
     container_name: datto-nginx
@@ -115,8 +115,6 @@ services:
       - "443:443"
     networks:
       - datto-network
-    profiles:
-      - production
 
 networks:
   datto-network:
