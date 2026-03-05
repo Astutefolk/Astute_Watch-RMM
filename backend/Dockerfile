@@ -48,5 +48,8 @@ COPY backend/tsconfig.json ./
 
 EXPOSE 4000
 
-# Start backend with tsconfig-paths for alias resolution
-CMD ["node", "-r", "tsconfig-paths/register", "dist/index.js"]
+# Set environment for path resolution
+ENV NODE_PATH=/app/dist
+
+# Start backend - paths already compiled correctly by tsc
+CMD ["node", "dist/index.js"]
