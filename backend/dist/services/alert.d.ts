@@ -10,9 +10,9 @@ export declare class AlertService {
             type: import(".prisma/client").$Enums.AlertType;
             message: string;
             id: string;
+            deviceId: string;
             createdAt: Date;
             orgId: string;
-            deviceId: string;
             severity: import(".prisma/client").$Enums.AlertSeverity;
             isResolved: boolean;
             resolvedAt: Date | null;
@@ -28,9 +28,9 @@ export declare class AlertService {
         type: import(".prisma/client").$Enums.AlertType;
         message: string;
         id: string;
+        deviceId: string;
         createdAt: Date;
         orgId: string;
-        deviceId: string;
         severity: import(".prisma/client").$Enums.AlertSeverity;
         isResolved: boolean;
         resolvedAt: Date | null;
@@ -39,9 +39,9 @@ export declare class AlertService {
         type: import(".prisma/client").$Enums.AlertType;
         message: string;
         id: string;
+        deviceId: string;
         createdAt: Date;
         orgId: string;
-        deviceId: string;
         severity: import(".prisma/client").$Enums.AlertSeverity;
         isResolved: boolean;
         resolvedAt: Date | null;

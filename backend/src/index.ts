@@ -11,9 +11,6 @@ import {
   notFoundHandler,
 } from '@/middleware/auth';
 import { globalLimiter } from '@/middleware/rateLimit';
-import authRoutes from '@/routes/auth';
-import deviceRoutes from '@/routes/device';
-import alertRoutes from '@/routes/alert';
 import {
   initWebSocket,
   setupRedisSubscriber,
@@ -47,6 +44,19 @@ async function initialize() {
     // Setup offline device checker
     await setupOfflineDeviceChecker();
     console.log('✅ Offline device checker setup');
+
+    // Register routes AFTER all services are initialized
+    const authRoutes = (await import('@/routes/auth')).default;
+    const deviceRoutes = (await import('@/routes/device')).default;
+    const alertRoutes = (await import('@/routes/alert')).default;
+
+    const apiV1 = express.Router();
+    apiV1.use('/auth', authRoutes);
+    apiV1.use('/devices', deviceRoutes);
+    apiV1.use('/alerts', alertRoutes);
+    app.use('/api/v1', apiV1);
+
+    console.log('✅ Routes registered');
   } catch (error) {
     console.error('❌ Initialization failed:', error);
     process.exit(1);
@@ -81,21 +91,6 @@ app.get('/health', (_req: Request, res: Response) => {
     uptime: process.uptime(),
   });
 });
-
-// ============ API ROUTES ============
-
-const apiV1 = express.Router();
-
-// Auth routes (public)
-apiV1.use('/auth', authRoutes);
-
-// Device routes
-apiV1.use('/devices', deviceRoutes);
-
-// Alert routes
-apiV1.use('/alerts', alertRoutes);
-
-app.use('/api/v1', apiV1);
 
 // ============ ERROR HANDLING ============
 

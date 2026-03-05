@@ -17,8 +17,8 @@ export declare class AuthService {
     findUserById(userId: string): Promise<{
         role: import(".prisma/client").$Enums.Role;
         id: string;
-        email: string;
         organizationId: string;
+        email: string;
     } | null>;
     validateApiKey(apiKey: string): Promise<({
         orgId: {

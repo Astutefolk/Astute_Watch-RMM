@@ -19,33 +19,33 @@ export declare class DeviceService {
     registerDevice(deviceId: string, orgId: string, osVersion?: string): Promise<{
         name: string;
         id: string;
-        organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
         deviceId: string;
         osVersion: string | null;
         lastSeen: Date | null;
         isOnline: boolean;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     recordHeartbeat(deviceId: string, orgId: string, cpu: number, ram: number, disk: number, osVersion?: string): Promise<{
         name: string;
         id: string;
-        organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
         deviceId: string;
         osVersion: string | null;
         lastSeen: Date | null;
         isOnline: boolean;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     checkAndCreateAlerts(deviceId: string, orgId: string, cpu: number, ram: number, disk: number): Promise<void>;
     createAlert(deviceId: string, orgId: string, type: AlertType, severity: AlertSeverity, message: string): Promise<{
         type: import(".prisma/client").$Enums.AlertType;
         message: string;
         id: string;
+        deviceId: string;
         createdAt: Date;
         orgId: string;
-        deviceId: string;
         severity: import(".prisma/client").$Enums.AlertSeverity;
         isResolved: boolean;
         resolvedAt: Date | null;
@@ -54,9 +54,9 @@ export declare class DeviceService {
         devices: ({
             metrics: {
                 id: string;
+                deviceId: string;
                 createdAt: Date;
                 orgId: string;
-                deviceId: string;
                 cpu: number;
                 ram: number;
                 disk: number;
@@ -65,22 +65,22 @@ export declare class DeviceService {
         } & {
             name: string;
             id: string;
-            organizationId: string;
-            createdAt: Date;
-            updatedAt: Date;
             deviceId: string;
             osVersion: string | null;
             lastSeen: Date | null;
             isOnline: boolean;
+            organizationId: string;
+            createdAt: Date;
+            updatedAt: Date;
         })[];
         total: number;
     }>;
     getDeviceById(deviceId: string, orgId: string): Promise<{
         metrics: {
             id: string;
+            deviceId: string;
             createdAt: Date;
             orgId: string;
-            deviceId: string;
             cpu: number;
             ram: number;
             disk: number;
@@ -89,24 +89,24 @@ export declare class DeviceService {
     } & {
         name: string;
         id: string;
-        organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
         deviceId: string;
         osVersion: string | null;
         lastSeen: Date | null;
         isOnline: boolean;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     deleteDevice(deviceId: string, orgId: string): Promise<{
         name: string;
         id: string;
-        organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
         deviceId: string;
         osVersion: string | null;
         lastSeen: Date | null;
         isOnline: boolean;
+        organizationId: string;
+        createdAt: Date;
+        updatedAt: Date;
     }>;
     getDeviceStats(orgId: string): Promise<{
         total: number;
