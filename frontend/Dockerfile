@@ -45,7 +45,11 @@ RUN npm ci --omit=dev
 
 # Copy built application from builder
 COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY frontend/next.config.js frontend/tailwind.config.ts ./
 RUN mkdir -p /app/public
+
+# Copy node_modules
 COPY --from=builder /app/node_modules ./node_modules
 
 # Set production environment
