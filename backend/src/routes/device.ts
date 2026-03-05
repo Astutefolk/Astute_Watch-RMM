@@ -5,6 +5,14 @@ import { agentLimiter } from '@/middleware/rateLimit';
 
 const router = express.Router();
 
+// Device registration (for agents)
+router.post(
+  '/register',
+  apiKeyMiddleware,
+  agentLimiter,
+  deviceController.registerAgent
+);
+
 // Device metrics (for agents)
 router.post(
   '/heartbeat',

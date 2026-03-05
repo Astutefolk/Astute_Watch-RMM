@@ -114,6 +114,56 @@ export async function deleteDevice(req: Request, res: Response) {
   }
 }
 
+export async function registerAgent(req: Request, res: Response) {
+  try {
+    const apiKey = req.headers['x-api-key'] as string;
+    const { deviceId, osVersion, deviceName } = req.body;
+
+    if (!deviceId) {
+      return res.status(400).json({
+        error: 'Missing required field: deviceId',
+      });
+    }
+
+    // Validate API key and get organization
+    const authService = new (await import('@/services/auth')).AuthService();
+    const apiKeyRecord = await authService.validateApiKey(apiKey);
+
+    if (!apiKeyRecord) {
+      return res.status(401).json({ error: 'Invalid or inactive API key' });
+    }
+
+    // Register the device
+    const device = await getDeviceService().registerDevice(
+      deviceId,
+      apiKeyRecord.organizationId,
+      osVersion
+    );
+
+    // Update device name if provided
+    if (deviceName) {
+      await prisma.device.update({
+        where: { id: device.id },
+        data: { name: deviceName },
+      });
+    }
+
+    return res.status(201).json({
+      success: true,
+      device: {
+        id: device.id,
+        deviceId: device.deviceId,
+        name: device.name,
+        isOnline: device.isOnline,
+      },
+      message: 'Device registered successfully',
+    });
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({ error: error.message });
+  }
+}
+
 export async function getStats(req: Request, res: Response) {
   try {
     if (!req.user || !req.orgId) {

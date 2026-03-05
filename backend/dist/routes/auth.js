@@ -45,5 +45,9 @@ router.post('/register', rateLimit_1.authLimiter, authController.register);
 router.post('/login', rateLimit_1.authLimiter, authController.login);
 router.post('/refresh-token', authController.refreshToken);
 router.get('/me', auth_1.authMiddleware, authController.me);
+// API Key management
+router.get('/api-keys', auth_1.authMiddleware, authController.getApiKeys);
+router.post('/api-keys', auth_1.authMiddleware, authController.createApiKey);
+router.patch('/api-keys/:id', auth_1.authMiddleware, authController.toggleApiKey);
 exports.default = router;
 //# sourceMappingURL=auth.js.map

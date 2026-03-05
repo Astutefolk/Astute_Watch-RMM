@@ -22,6 +22,7 @@ export function Navigation() {
     { label: 'Dashboard', href: '/dashboard', icon: '📊' },
     { label: 'Devices', href: '/devices', icon: '💻' },
     { label: 'Alerts', href: '/alerts', icon: '⚠️' },
+    { label: 'Settings', href: '/settings', icon: '⚙️' },
   ];
 
   return (

@@ -78,6 +78,21 @@ export const authApi = {
     const response = await apiClient.get('/auth/me');
     return response.data;
   },
+
+  getApiKeys: async () => {
+    const response = await apiClient.get('/auth/api-keys');
+    return response.data;
+  },
+
+  createApiKey: async (name: string) => {
+    const response = await apiClient.post('/auth/api-keys', { name });
+    return response.data;
+  },
+
+  toggleApiKey: async (id: string, isActive: boolean) => {
+    const response = await apiClient.patch(`/auth/api-keys/${id}`, { isActive });
+    return response.data;
+  },
 };
 
 // ============ Device Endpoints ============

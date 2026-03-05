@@ -137,3 +137,116 @@ export async function me(req: Request, res: Response) {
     return res.status(500).json({ error: error.message });
   }
 }
+
+export async function getApiKeys(req: Request, res: Response) {
+  try {
+    if (!req.user || !req.orgId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { getPrisma } = await import('@/database/prisma');
+    const prisma = getPrisma();
+
+    const apiKeys = await prisma.apiKey.findMany({
+      where: { organizationId: req.orgId },
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+        createdAt: true,
+        key: false, // Don't return the full key for security
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return res.json({ apiKeys });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+}
+
+export async function createApiKey(req: Request, res: Response) {
+  try {
+    if (!req.user || !req.orgId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Only admins can create API keys' });
+    }
+
+    const { name } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'Missing required field: name' });
+    }
+
+    const { hashApiKey, generateApiKey } = await import('@/utils/helpers');
+    const { getPrisma } = await import('@/database/prisma');
+    const prisma = getPrisma();
+
+    const apiKey = generateApiKey();
+    const hashedKey = hashApiKey(apiKey);
+
+    const createdKey = await prisma.apiKey.create({
+      data: {
+        key: hashedKey,
+        name,
+        organizationId: req.orgId,
+      },
+    });
+
+    return res.status(201).json({
+      id: createdKey.id,
+      name: createdKey.name,
+      key: apiKey, // Only return new key once
+      isActive: createdKey.isActive,
+      message: 'Save this key in a secure location. You will not see it again.',
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+}
+
+export async function toggleApiKey(req: Request, res: Response) {
+  try {
+    if (!req.user || !req.orgId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Only admins can manage API keys' });
+    }
+
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    const { getPrisma } = await import('@/database/prisma');
+    const prisma = getPrisma();
+
+    // Verify key belongs to org
+    const key = await prisma.apiKey.findFirst({
+      where: {
+        id,
+        organizationId: req.orgId,
+      },
+    });
+
+    if (!key) {
+      return res.status(404).json({ error: 'API key not found' });
+    }
+
+    const updated = await prisma.apiKey.update({
+      where: { id },
+      data: { isActive },
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+      },
+    });
+
+    return res.json(updated);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+}

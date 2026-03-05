@@ -84,9 +84,9 @@ export default function RegisterPage() {
       setTokens(data.accessToken, data.refreshToken);
       setUser(data.user);
 
-      // Show API key in a modal or secure way
-      alert(`Your API Key: ${data.apiKey}\n\nSave this securely! You'll need it for agents.`);
-
+      // Store API key securely - will be shown in settings page
+      // Don't show alert here anymore
+      
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');

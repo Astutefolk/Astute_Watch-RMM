@@ -37,6 +37,7 @@ exports.heartbeat = heartbeat;
 exports.getDevices = getDevices;
 exports.getDevice = getDevice;
 exports.deleteDevice = deleteDevice;
+exports.registerAgent = registerAgent;
 exports.getStats = getStats;
 exports.getDashboard = getDashboard;
 const device_1 = require("@/services/device");
@@ -124,6 +125,46 @@ async function deleteDevice(req, res) {
         const { id } = req.params;
         const device = await getDeviceService().deleteDevice(id, req.orgId);
         return res.json({ message: 'Device deleted', device });
+    }
+    catch (error) {
+        const statusCode = error.statusCode || 500;
+        return res.status(statusCode).json({ error: error.message });
+    }
+}
+async function registerAgent(req, res) {
+    try {
+        const apiKey = req.headers['x-api-key'];
+        const { deviceId, osVersion, deviceName } = req.body;
+        if (!deviceId) {
+            return res.status(400).json({
+                error: 'Missing required field: deviceId',
+            });
+        }
+        // Validate API key and get organization
+        const authService = new (await Promise.resolve().then(() => __importStar(require('@/services/auth')))).AuthService();
+        const apiKeyRecord = await authService.validateApiKey(apiKey);
+        if (!apiKeyRecord) {
+            return res.status(401).json({ error: 'Invalid or inactive API key' });
+        }
+        // Register the device
+        const device = await getDeviceService().registerDevice(deviceId, apiKeyRecord.organizationId, osVersion);
+        // Update device name if provided
+        if (deviceName) {
+            await prisma.device.update({
+                where: { id: device.id },
+                data: { name: deviceName },
+            });
+        }
+        return res.status(201).json({
+            success: true,
+            device: {
+                id: device.id,
+                deviceId: device.deviceId,
+                name: device.name,
+                isOnline: device.isOnline,
+            },
+            message: 'Device registered successfully',
+        });
     }
     catch (error) {
         const statusCode = error.statusCode || 500;

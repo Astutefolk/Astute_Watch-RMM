@@ -23,10 +23,11 @@ import (
 
 // Config holds agent configuration
 type Config struct {
-	APIKey   string
-	APIUrl   string
-	Interval int
-	DeviceID string
+	APIKey     string
+	APIUrl     string
+	Interval   int
+	DeviceID   string
+	DeviceName string
 }
 
 // SystemMetrics represents system metrics
@@ -36,6 +37,25 @@ type SystemMetrics struct {
 	RAM       float64 `json:"ram"`
 	Disk      float64 `json:"disk"`
 	OSVersion string  `json:"osVersion"`
+}
+
+// RegistrationRequest represents device registration request
+type RegistrationRequest struct {
+	DeviceID   string `json:"deviceId"`
+	OSVersion  string `json:"osVersion"`
+	DeviceName string `json:"deviceName"`
+}
+
+// RegistrationResponse represents device registration response
+type RegistrationResponse struct {
+	Success bool `json:"success"`
+	Device  struct {
+		ID       string `json:"id"`
+		DeviceID string `json:"deviceId"`
+		Name     string `json:"name"`
+		IsOnline bool   `json:"isOnline"`
+	} `json:"device"`
+	Message string `json:"message"`
 }
 
 // Agent manages the monitoring client
@@ -85,7 +105,15 @@ func (a *Agent) Start() {
 
 	a.logger.Printf("🚀 Starting DATTO Agent")
 	a.logger.Printf("📍 API URL: %s", a.config.APIUrl)
+	a.logger.Printf("� Device ID: %s", a.config.DeviceID)
 	a.logger.Printf("🔄 Heartbeat Interval: %d seconds", a.config.Interval)
+
+	// Register device
+	if err := a.registerDevice(); err != nil {
+		a.logger.Printf("⚠️  Device registration failed: %v (will retry on heartbeat)", err)
+	} else {
+		a.logger.Println("✅ Device registered successfully")
+	}
 
 	// Start heartbeat loop
 	a.wg.Add(1)
@@ -114,6 +142,68 @@ func (a *Agent) heartbeatLoop() {
 			a.sendHeartbeat()
 		}
 	}
+}
+
+// registerDevice registers the device with the backend
+func (a *Agent) registerDevice() error {
+	// Get OS version
+	hostInfo, err := host.Info()
+	var osVersion string
+	if err == nil {
+		osVersion = fmt.Sprintf("%s %s", hostInfo.OS, hostInfo.PlatformVersion)
+	}
+
+	// Prepare registration request
+	regReq := RegistrationRequest{
+		DeviceID:   a.config.DeviceID,
+		OSVersion:  osVersion,
+		DeviceName: a.config.DeviceName,
+	}
+
+	bodyBytes, err := json.Marshal(regReq)
+	if err != nil {
+		return fmt.Errorf("failed to marshal registration request: %w", err)
+	}
+
+	// Create request
+	req, err := http.NewRequestWithContext(
+		a.ctx,
+		http.MethodPost,
+		fmt.Sprintf("%s/devices/register", a.config.APIUrl),
+		bytes.NewBuffer(bodyBytes),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create registration request: %w", err)
+	}
+
+	// Set headers
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", a.config.APIKey)
+
+	// Send request
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send registration request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("registration API returned status %d", resp.StatusCode)
+	}
+
+	// Parse response
+	var regResp RegistrationResponse
+	if err := json.NewDecoder(resp.Body).Decode(&regResp); err != nil {
+		return fmt.Errorf("failed to parse registration response: %w", err)
+	}
+
+	if !regResp.Success {
+		return fmt.Errorf("registration failed: %s", regResp.Message)
+	}
+
+	a.logger.Printf("📦 Device registered as: %s", regResp.Device.Name)
+	return nil
 }
 
 // sendHeartbeat collects and sends system metrics
@@ -245,15 +335,16 @@ func main() {
 	apiUrl := flag.String("api", "http://localhost:3000/api/v1", "API URL")
 	interval := flag.Int("interval", 30, "Heartbeat interval in seconds")
 	deviceID := flag.String("device", "", "Device ID (auto-generated if not provided)")
+	deviceName := flag.String("name", "", "Device name (optional)")
 
 	flag.Parse()
 
 	// Validate required parameters
 	if *apiKey == "" {
 		fmt.Println("Error: API key is required")
-		fmt.Println("\nUsage: datto-agent -key YOUR_API_KEY [-api URL] [-interval SECONDS] [-device DEVICE_ID]")
+		fmt.Println("\nUsage: datto-agent -key YOUR_API_KEY [-api URL] [-interval SECONDS] [-device DEVICE_ID] [-name DEVICE_NAME]")
 		fmt.Println("\nExample:")
-		fmt.Println("  datto-agent -key key_abc123xyz -api https://rmm.company.com/api/v1")
+		fmt.Println("  datto-agent -key key_abc123xyz -api https://rmm.company.com/api/v1 -name \"Production Server 1\"")
 		os.Exit(1)
 	}
 
@@ -267,12 +358,18 @@ func main() {
 		}
 	}
 
+	// Generate device name if not provided
+	if *deviceName == "" {
+		*deviceName = *deviceID
+	}
+
 	// Create and start agent
 	config := Config{
-		APIKey:   *apiKey,
-		APIUrl:   *apiUrl,
-		Interval: *interval,
-		DeviceID: *deviceID,
+		APIKey:     *apiKey,
+		APIUrl:     *apiUrl,
+		Interval:   *interval,
+		DeviceID:   *deviceID,
+		DeviceName: *deviceName,
 	}
 
 	agent := NewAgent(config)

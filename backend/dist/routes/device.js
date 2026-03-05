@@ -41,6 +41,8 @@ const deviceController = __importStar(require("@/controllers/device"));
 const auth_1 = require("@/middleware/auth");
 const rateLimit_1 = require("@/middleware/rateLimit");
 const router = express_1.default.Router();
+// Device registration (for agents)
+router.post('/register', auth_1.apiKeyMiddleware, rateLimit_1.agentLimiter, deviceController.registerAgent);
 // Device metrics (for agents)
 router.post('/heartbeat', auth_1.apiKeyMiddleware, rateLimit_1.agentLimiter, deviceController.heartbeat);
 // Device management (for dashboard)
