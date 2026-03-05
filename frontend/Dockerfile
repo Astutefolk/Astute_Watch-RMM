@@ -19,9 +19,11 @@ COPY --from=deps /app/node_modules ./node_modules
 
 # Copy source and config
 COPY frontend/src ./src
-COPY frontend/public ./public
 COPY frontend/tsconfig.json frontend/next.config.js frontend/tailwind.config.ts ./
 COPY frontend/package*.json ./
+
+# Create public directory for Next.js static files
+RUN mkdir -p /app/public
 
 # Set build-time environment variables
 ARG NEXT_PUBLIC_API_URL=/api/v1
@@ -43,7 +45,7 @@ RUN npm ci --omit=dev
 
 # Copy built application from builder
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
+RUN mkdir -p /app/public
 COPY --from=builder /app/node_modules ./node_modules
 
 # Set production environment
