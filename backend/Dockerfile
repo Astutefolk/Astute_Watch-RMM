@@ -41,6 +41,7 @@ RUN npm run prisma:generate
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY backend/tsconfig.json ./
 
 # Optional: copy .env if you use environment variables
 # COPY backend/.env ./
