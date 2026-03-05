@@ -12,6 +12,9 @@ COPY backend/src ./src
 COPY backend/prisma ./prisma
 COPY backend/tsconfig.json ./
 
+# Generate Prisma client
+RUN npm run prisma:generate
+
 # Build TypeScript
 RUN npm run build
 
@@ -24,9 +27,12 @@ WORKDIR /app
 COPY backend/package*.json ./
 RUN npm ci --omit=dev
 
-# Copy build artifacts and Prisma files from builder
+# Generate Prisma client in production
+COPY backend/prisma ./prisma
+RUN npm run prisma:generate
+
+# Copy build artifacts from builder
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
