@@ -11,9 +11,9 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "moduleResolution": "node",
-    "baseUrl": "./",
+    "baseUrl": "./src",
     "paths": {
-      "@/*": ["./dist/*"]
+      "@/*": ["./*"]
     },
     "declaration": true,
     "declarationMap": true,

@@ -41,11 +41,11 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const http_1 = require("http");
-const env_1 = require("@/config/env");
-const mongodb_1 = require("@/database/mongodb");
-const redis_1 = require("@/config/redis");
-const auth_1 = require("@/middleware/auth");
-const rateLimit_1 = require("@/middleware/rateLimit");
+const env_1 = require("./config/env");
+const mongodb_1 = require("./database/mongodb");
+const redis_1 = require("./config/redis");
+const auth_1 = require("./middleware/auth");
+const rateLimit_1 = require("./middleware/rateLimit");
 const app = (0, express_1.default)();
 const httpServer = (0, http_1.createServer)(app);
 // ============ INITIALIZATION ============
@@ -58,7 +58,7 @@ async function initialize() {
         await (0, redis_1.initRedis)();
         console.log('✅ Redis connected');
         // Import websocket handler AFTER databases are initialized
-        const { initWebSocket, setupRedisSubscriber, setupOfflineDeviceChecker, } = await Promise.resolve().then(() => __importStar(require('@/websocket/handler')));
+        const { initWebSocket, setupRedisSubscriber, setupOfflineDeviceChecker, } = await Promise.resolve().then(() => __importStar(require('./websocket/handler')));
         // Initialize WebSocket
         initWebSocket(httpServer);
         console.log('✅ WebSocket initialized');
@@ -69,9 +69,9 @@ async function initialize() {
         await setupOfflineDeviceChecker();
         console.log('✅ Offline device checker setup');
         // Register routes AFTER all services are initialized
-        const authRoutes = (await Promise.resolve().then(() => __importStar(require('@/routes/auth')))).default;
-        const deviceRoutes = (await Promise.resolve().then(() => __importStar(require('@/routes/device')))).default;
-        const alertRoutes = (await Promise.resolve().then(() => __importStar(require('@/routes/alert')))).default;
+        const authRoutes = (await Promise.resolve().then(() => __importStar(require('./routes/auth')))).default;
+        const deviceRoutes = (await Promise.resolve().then(() => __importStar(require('./routes/device')))).default;
+        const alertRoutes = (await Promise.resolve().then(() => __importStar(require('./routes/alert')))).default;
         const apiV1 = express_1.default.Router();
         apiV1.use('/auth', authRoutes);
         apiV1.use('/devices', deviceRoutes);

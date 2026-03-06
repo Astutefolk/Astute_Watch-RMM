@@ -3,14 +3,14 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { createServer } from 'http';
-import { envConfig } from '@/config/env';
-import { connectDB, disconnectDB } from '@/database/mongodb';
-import { initRedis, closeRedis } from '@/config/redis';
+import { envConfig } from './config/env';
+import { connectDB, disconnectDB } from './database/mongodb';
+import { initRedis, closeRedis } from './config/redis';
 import {
   errorHandler,
   notFoundHandler,
-} from '@/middleware/auth';
-import { globalLimiter } from '@/middleware/rateLimit';
+} from './middleware/auth';
+import { globalLimiter } from './middleware/rateLimit';
 
 const app = express();
 const httpServer = createServer(app);
@@ -33,7 +33,7 @@ async function initialize() {
       initWebSocket,
       setupRedisSubscriber,
       setupOfflineDeviceChecker,
-    } = await import('@/websocket/handler');
+    } = await import('./websocket/handler');
 
     // Initialize WebSocket
     initWebSocket(httpServer);
@@ -48,9 +48,9 @@ async function initialize() {
     console.log('✅ Offline device checker setup');
 
     // Register routes AFTER all services are initialized
-    const authRoutes = (await import('@/routes/auth')).default;
-    const deviceRoutes = (await import('@/routes/device')).default;
-    const alertRoutes = (await import('@/routes/alert')).default;
+    const authRoutes = (await import('./routes/auth')).default;
+    const deviceRoutes = (await import('./routes/device')).default;
+    const alertRoutes = (await import('./routes/alert')).default;
 
     const apiV1 = express.Router();
     apiV1.use('/auth', authRoutes);
