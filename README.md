@@ -1,4 +1,4 @@
-# 🛡️ DATTO RMM - Remote Monitoring and Management Platform
+# 🛡️ Astute-Watch RMM - Remote Monitoring and Management Platform
 
 A production-ready, enterprise-grade Remote Monitoring and Management (RMM) platform similar to Datto RMM. This is a complete SaaS architecture with real-time device monitoring, alerting, and management capabilities.
 
