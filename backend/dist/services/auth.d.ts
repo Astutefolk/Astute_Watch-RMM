@@ -1,37 +1,42 @@
 export declare class AuthService {
-    private prisma;
-    private redis;
-    private getRedis;
     register(email: string, password: string, organizationName: string): Promise<{
-        userId: string;
-        orgId: string;
+        userId: import("mongoose").Types.ObjectId;
+        orgId: import("mongoose").Types.ObjectId;
         email: string;
         apiKey: string;
     }>;
     login(email: string, password: string): Promise<{
-        userId: string;
+        userId: import("mongoose").Types.ObjectId;
         email: string;
-        role: import(".prisma/client").$Enums.Role;
-        orgId: string;
+        role: "ADMIN" | "USER";
+        orgId: import("mongoose").Types.ObjectId;
     }>;
-    findUserById(userId: string): Promise<{
-        role: import(".prisma/client").$Enums.Role;
-        id: string;
-        organizationId: string;
-        email: string;
-    } | null>;
-    validateApiKey(apiKey: string): Promise<({
-        orgId: {
-            id: string;
-        };
-    } & {
+    findUserById(userId: string): Promise<(import("@/models/User").IUser & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    }) | null>;
+    validateApiKey(apiKey: string): Promise<(import("@/models/ApiKey").IApiKey & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    }) | null>;
+    createApiKey(organizationId: string, name: string): Promise<{
+        id: import("mongoose").Types.ObjectId;
         name: string;
-        id: string;
-        organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
         key: string;
         isActive: boolean;
+    }>;
+    getApiKeys(organizationId: string): Promise<(import("@/models/ApiKey").IApiKey & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    })[]>;
+    toggleApiKey(apiKeyId: string, isActive: boolean): Promise<(import("@/models/ApiKey").IApiKey & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
     }) | null>;
 }
+export declare const authService: AuthService;
 //# sourceMappingURL=auth.d.ts.map

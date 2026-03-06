@@ -1,15 +1,5 @@
 import { Request, Response } from 'express';
-import { AlertService } from '@/services/alert';
-import { getPaginationParams } from '@/utils/helpers';
-
-let alertService: AlertService | null = null;
-
-function getAlertService() {
-  if (!alertService) {
-    alertService = new AlertService();
-  }
-  return alertService;
-}
+import { alertService } from '@/services/alert';
 
 export async function getAlerts(req: Request, res: Response) {
   try {
@@ -17,13 +7,14 @@ export async function getAlerts(req: Request, res: Response) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { page, limit, unresolved } = req.query;
-    const { skip, take } = getPaginationParams(page as string, limit as string);
+    const { page = '1', limit = '10', unresolved } = req.query;
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || 10;
 
-    const { alerts, total } = await getAlertService().getAlerts(
+    const { alerts, total } = await alertService.getAlerts(
       req.orgId,
-      skip,
-      take,
+      pageNum,
+      limitNum,
       unresolved === 'true'
     );
 
@@ -31,8 +22,9 @@ export async function getAlerts(req: Request, res: Response) {
       alerts,
       pagination: {
         total,
-        page: Math.floor(skip / take) + 1,
-        limit: take,
+        page: pageNum,
+        limit: limitNum,
+        pages: Math.ceil(total / limitNum),
       },
     });
   } catch (error: any) {
@@ -47,12 +39,15 @@ export async function getAlert(req: Request, res: Response) {
     }
 
     const { id } = req.params;
-    const alert = await getAlertService().getAlertById(id, req.orgId);
+    const alert = await alertService.getAlert(id, req.orgId);
+
+    if (!alert) {
+      return res.status(404).json({ error: 'Alert not found' });
+    }
 
     return res.json(alert);
   } catch (error: any) {
-    const statusCode = error.statusCode || 500;
-    return res.status(statusCode).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
 
@@ -63,12 +58,11 @@ export async function resolveAlert(req: Request, res: Response) {
     }
 
     const { id } = req.params;
-    const alert = await getAlertService().resolveAlert(id, req.orgId);
+    const alert = await alertService.resolveAlert(id);
 
     return res.json(alert);
   } catch (error: any) {
-    const statusCode = error.statusCode || 500;
-    return res.status(statusCode).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
 
@@ -78,7 +72,7 @@ export async function getStats(req: Request, res: Response) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const stats = await getAlertService().getStats(req.orgId);
+    const stats = await alertService.getStats(req.orgId);
 
     return res.json(stats);
   } catch (error: any) {

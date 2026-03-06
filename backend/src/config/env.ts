@@ -1,6 +1,6 @@
 export interface EnvConfig {
   // Database
-  databaseUrl: string;
+  mongodbUri: string;
   
   // Redis
   redisUrl: string;
@@ -63,7 +63,7 @@ function getEnvArray(key: string, defaultValue?: string[]): string[] {
 
 export const envConfig: EnvConfig = {
   // Database
-  databaseUrl: getEnv('DATABASE_URL'),
+  mongodbUri: getEnv('MONGODB_URI', 'mongodb://localhost:27017/datto'),
   
   // Redis
   redisUrl: getEnv('REDIS_URL'),

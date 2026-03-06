@@ -42,13 +42,6 @@ exports.createApiKey = createApiKey;
 exports.toggleApiKey = toggleApiKey;
 const auth_1 = require("@/services/auth");
 const helpers_1 = require("@/utils/helpers");
-let authService = null;
-function getAuthService() {
-    if (!authService) {
-        authService = new auth_1.AuthService();
-    }
-    return authService;
-}
 async function register(req, res) {
     try {
         const { email, password, organizationName } = req.body;
@@ -57,15 +50,14 @@ async function register(req, res) {
                 error: 'Missing required fields: email, password, organizationName',
             });
         }
-        const result = await getAuthService().register(email, password, organizationName);
-        // Generate tokens
+        const result = await auth_1.authService.register(email, password, organizationName);
         const accessToken = (0, helpers_1.generateAccessToken)({
-            userId: result.userId,
-            orgId: result.orgId,
+            userId: result.userId.toString(),
+            orgId: result.orgId.toString(),
             email: result.email,
             role: 'ADMIN',
         });
-        const refreshToken = (0, helpers_1.generateRefreshToken)(result.userId);
+        const refreshToken = (0, helpers_1.generateRefreshToken)(result.userId.toString());
         return res.status(201).json({
             accessToken,
             refreshToken,
@@ -78,8 +70,7 @@ async function register(req, res) {
         });
     }
     catch (error) {
-        const statusCode = error.statusCode || 500;
-        return res.status(statusCode).json({ error: error.message });
+        return res.status(500).json({ error: error.message });
     }
 }
 async function login(req, res) {
@@ -90,15 +81,14 @@ async function login(req, res) {
                 error: 'Missing required fields: email, password',
             });
         }
-        const user = await getAuthService().login(email, password);
-        // Generate tokens
+        const user = await auth_1.authService.login(email, password);
         const accessToken = (0, helpers_1.generateAccessToken)({
-            userId: user.userId,
-            orgId: user.orgId,
+            userId: user.userId.toString(),
+            orgId: user.orgId.toString(),
             email: user.email,
             role: user.role,
         });
-        const refreshToken = (0, helpers_1.generateRefreshToken)(user.userId);
+        const refreshToken = (0, helpers_1.generateRefreshToken)(user.userId.toString());
         return res.json({
             accessToken,
             refreshToken,
@@ -111,29 +101,27 @@ async function login(req, res) {
         });
     }
     catch (error) {
-        const statusCode = error.statusCode || 500;
-        return res.status(statusCode).json({ error: error.message });
+        return res.status(500).json({ error: error.message });
     }
 }
 async function refreshToken(req, res) {
     try {
-        const { refreshToken } = req.body;
-        if (!refreshToken) {
+        const { refreshToken: token } = req.body;
+        if (!token) {
             return res.status(400).json({ error: 'Missing refreshToken' });
         }
         const { verifyRefreshToken } = await Promise.resolve().then(() => __importStar(require('@/utils/helpers')));
-        const payload = verifyRefreshToken(refreshToken);
+        const payload = verifyRefreshToken(token);
         if (!payload) {
             return res.status(401).json({ error: 'Invalid or expired refresh token' });
         }
-        const user = await getAuthService().findUserById(payload.userId);
+        const user = await auth_1.authService.findUserById(payload.userId);
         if (!user) {
             return res.status(401).json({ error: 'User not found' });
         }
-        // Generate new access token
         const accessToken = (0, helpers_1.generateAccessToken)({
-            userId: user.id,
-            orgId: user.organizationId,
+            userId: user._id.toString(),
+            orgId: user.organizationId.toString(),
             email: user.email,
             role: user.role,
         });
@@ -148,7 +136,7 @@ async function me(req, res) {
         if (!req.user) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
-        const user = await getAuthService().findUserById(req.user.userId);
+        const user = await auth_1.authService.findUserById(req.user.userId);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -163,19 +151,7 @@ async function getApiKeys(req, res) {
         if (!req.user || !req.orgId) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
-        const { getPrisma } = await Promise.resolve().then(() => __importStar(require('@/database/prisma')));
-        const prisma = getPrisma();
-        const apiKeys = await prisma.apiKey.findMany({
-            where: { organizationId: req.orgId },
-            select: {
-                id: true,
-                name: true,
-                isActive: true,
-                createdAt: true,
-                key: false, // Don't return the full key for security
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+        const apiKeys = await auth_1.authService.getApiKeys(req.orgId);
         return res.json({ apiKeys });
     }
     catch (error) {
@@ -194,22 +170,11 @@ async function createApiKey(req, res) {
         if (!name) {
             return res.status(400).json({ error: 'Missing required field: name' });
         }
-        const { hashApiKey, generateApiKey } = await Promise.resolve().then(() => __importStar(require('@/utils/helpers')));
-        const { getPrisma } = await Promise.resolve().then(() => __importStar(require('@/database/prisma')));
-        const prisma = getPrisma();
-        const apiKey = generateApiKey();
-        const hashedKey = hashApiKey(apiKey);
-        const createdKey = await prisma.apiKey.create({
-            data: {
-                key: hashedKey,
-                name,
-                organizationId: req.orgId,
-            },
-        });
+        const createdKey = await auth_1.authService.createApiKey(req.orgId, name);
         return res.status(201).json({
             id: createdKey.id,
             name: createdKey.name,
-            key: apiKey, // Only return new key once
+            key: createdKey.key,
             isActive: createdKey.isActive,
             message: 'Save this key in a secure location. You will not see it again.',
         });
@@ -228,28 +193,15 @@ async function toggleApiKey(req, res) {
         }
         const { id } = req.params;
         const { isActive } = req.body;
-        const { getPrisma } = await Promise.resolve().then(() => __importStar(require('@/database/prisma')));
-        const prisma = getPrisma();
-        // Verify key belongs to org
-        const key = await prisma.apiKey.findFirst({
-            where: {
-                id,
-                organizationId: req.orgId,
-            },
-        });
-        if (!key) {
+        const updated = await auth_1.authService.toggleApiKey(id, isActive);
+        if (!updated) {
             return res.status(404).json({ error: 'API key not found' });
         }
-        const updated = await prisma.apiKey.update({
-            where: { id },
-            data: { isActive },
-            select: {
-                id: true,
-                name: true,
-                isActive: true,
-            },
+        return res.json({
+            id: updated._id,
+            name: updated.name,
+            isActive: updated.isActive,
         });
-        return res.json(updated);
     }
     catch (error) {
         return res.status(500).json({ error: error.message });

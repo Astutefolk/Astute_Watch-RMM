@@ -4,7 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { createServer } from 'http';
 import { envConfig } from '@/config/env';
-import { initDb, closeDb } from '@/database/prisma';
+import { connectDB, disconnectDB } from '@/database/mongodb';
 import { initRedis, closeRedis } from '@/config/redis';
 import {
   errorHandler,
@@ -21,9 +21,9 @@ async function initialize() {
   try {
     console.log('🚀 Starting DATTO RMM Backend...');
 
-    // Connect to databases
-    await initDb();
-    console.log('✅ Database connected');
+    // Connect to MongoDB
+    await connectDB();
+    console.log('✅ MongoDB connected');
 
     await initRedis();
     console.log('✅ Redis connected');
@@ -123,7 +123,7 @@ process.on('SIGTERM', async () => {
   console.log('📭 SIGTERM signal received: closing HTTP server');
   httpServer.close(async () => {
     console.log('HTTP server closed');
-    await closeDb();
+    await disconnectDB();
     await closeRedis();
     process.exit(0);
   });
@@ -133,7 +133,7 @@ process.on('SIGINT', async () => {
   console.log('📭 SIGINT signal received: closing HTTP server');
   httpServer.close(async () => {
     console.log('HTTP server closed');
-    await closeDb();
+    await disconnectDB();
     await closeRedis();
     process.exit(0);
   });

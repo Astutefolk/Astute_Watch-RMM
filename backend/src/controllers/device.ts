@@ -1,23 +1,12 @@
 import { Request, Response } from 'express';
-import { DeviceService } from '@/services/device';
-import { getPaginationParams } from '@/utils/helpers';
-import { getPrisma } from '@/database/prisma';
-
-let deviceService: DeviceService | null = null;
-
-function getDeviceService() {
-  if (!deviceService) {
-    deviceService = new DeviceService();
-  }
-  return deviceService;
-}
-
-const prisma = getPrisma();
+import { deviceService } from '@/services/device';
+import { alertService } from '@/services/alert';
+import { authService } from '@/services/auth';
 
 export async function heartbeat(req: Request, res: Response) {
   try {
     const apiKey = req.headers['x-api-key'] as string;
-    const { deviceId, cpu, ram, disk, osVersion } = req.body;
+    const { deviceId, cpu, ram, disk } = req.body;
 
     if (!deviceId || cpu === undefined || ram === undefined || disk === undefined) {
       return res.status(400).json({
@@ -25,32 +14,24 @@ export async function heartbeat(req: Request, res: Response) {
       });
     }
 
-    // Validate API key and get organization
-    const authService = new (await import('@/services/auth')).AuthService();
     const apiKeyRecord = await authService.validateApiKey(apiKey);
-
     if (!apiKeyRecord) {
       return res.status(401).json({ error: 'Invalid or inactive API key' });
     }
 
-    // Record heartbeat
-    const device = await getDeviceService().recordHeartbeat(
+    const device = await deviceService.updateDeviceMetrics(
       deviceId,
-      apiKeyRecord.organizationId,
       cpu,
-      ram,
-      disk,
-      osVersion
+      ram
     );
 
     return res.json({
-      deviceId: device.deviceId,
-      deviceDbId: device.id,
+      deviceId,
+      deviceDbId: device?._id,
       nextHeartbeatInterval: 30000,
     });
   } catch (error: any) {
-    const statusCode = error.statusCode || 500;
-    return res.status(statusCode).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
 
@@ -60,17 +41,19 @@ export async function getDevices(req: Request, res: Response) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { page, limit } = req.query;
-    const { skip, take } = getPaginationParams(page as string, limit as string);
+    const { page = '1', limit = '10' } = req.query;
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || 10;
 
-    const { devices, total } = await getDeviceService().getDevices(req.orgId, skip, take);
+    const { devices, total } = await deviceService.getDevices(req.orgId, pageNum, limitNum);
 
     return res.json({
       devices,
       pagination: {
         total,
-        page: Math.floor(skip / take) + 1,
-        limit: take,
+        page: pageNum,
+        limit: limitNum,
+        pages: Math.ceil(total / limitNum),
       },
     });
   } catch (error: any) {
@@ -85,12 +68,15 @@ export async function getDevice(req: Request, res: Response) {
     }
 
     const { id } = req.params;
-    const device = await getDeviceService().getDeviceById(id, req.orgId);
+    const device = await deviceService.getDevice(id, req.orgId);
+
+    if (!device) {
+      return res.status(404).json({ error: 'Device not found' });
+    }
 
     return res.json(device);
   } catch (error: any) {
-    const statusCode = error.statusCode || 500;
-    return res.status(statusCode).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
 
@@ -105,19 +91,18 @@ export async function deleteDevice(req: Request, res: Response) {
     }
 
     const { id } = req.params;
-    const device = await getDeviceService().deleteDevice(id, req.orgId);
+    const device = await deviceService.deleteDevice(id);
 
     return res.json({ message: 'Device deleted', device });
   } catch (error: any) {
-    const statusCode = error.statusCode || 500;
-    return res.status(statusCode).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
 
 export async function registerAgent(req: Request, res: Response) {
   try {
     const apiKey = req.headers['x-api-key'] as string;
-    const { deviceId, osVersion, deviceName } = req.body;
+    const { deviceId, deviceName } = req.body;
 
     if (!deviceId) {
       return res.status(400).json({
@@ -125,42 +110,29 @@ export async function registerAgent(req: Request, res: Response) {
       });
     }
 
-    // Validate API key and get organization
-    const authService = new (await import('@/services/auth')).AuthService();
     const apiKeyRecord = await authService.validateApiKey(apiKey);
-
     if (!apiKeyRecord) {
       return res.status(401).json({ error: 'Invalid or inactive API key' });
     }
 
-    // Register the device
-    const device = await getDeviceService().registerDevice(
-      deviceId,
-      apiKeyRecord.organizationId,
-      osVersion
+    const device = await deviceService.createDevice(
+      apiKeyRecord.organizationId.toString(),
+      deviceName || `Device ${deviceId.slice(0, 8)}`,
+      deviceId
     );
-
-    // Update device name if provided
-    if (deviceName) {
-      await prisma.device.update({
-        where: { id: device.id },
-        data: { name: deviceName },
-      });
-    }
 
     return res.status(201).json({
       success: true,
       device: {
-        id: device.id,
-        deviceId: device.deviceId,
+        id: device._id,
+        deviceId: device.hostname,
         name: device.name,
-        isOnline: device.isOnline,
+        status: device.status,
       },
       message: 'Device registered successfully',
     });
   } catch (error: any) {
-    const statusCode = error.statusCode || 500;
-    return res.status(statusCode).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
 
@@ -170,7 +142,7 @@ export async function getStats(req: Request, res: Response) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const stats = await getDeviceService().getDeviceStats(req.orgId);
+    const stats = await deviceService.getStats(req.orgId);
 
     return res.json(stats);
   } catch (error: any) {
@@ -184,35 +156,19 @@ export async function getDashboard(req: Request, res: Response) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const [deviceStats, recentAlerts, alertStats] = await Promise.all([
-      getDeviceService().getDeviceStats(req.orgId),
-      prisma.alert.findMany({
-        where: { orgId: req.orgId },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-        include: {
-          device: {
-            select: { name: true },
-          },
-        },
-      }),
-      prisma.alert.count({
-        where: {
-          orgId: req.orgId,
-          severity: 'CRITICAL',
-          isResolved: false,
-        },
-      }),
+    const [deviceStats, alertStats] = await Promise.all([
+      deviceService.getDashboard(req.orgId),
+      alertService.getStats(req.orgId),
     ]);
 
     return res.json({
       stats: {
-        totalDevices: deviceStats.total,
+        totalDevices: deviceStats.totalDevices,
         onlineDevices: deviceStats.online,
         offlineDevices: deviceStats.offline,
-        criticalAlerts: alertStats,
+        criticalAlerts: alertStats.critical,
       },
-      recentAlerts,
+      alertStats,
     });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });

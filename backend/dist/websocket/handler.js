@@ -32,6 +32,9 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.initWebSocket = initWebSocket;
 exports.getWebSocket = getWebSocket;
@@ -43,15 +46,9 @@ exports.setupOfflineDeviceChecker = setupOfflineDeviceChecker;
 const socket_io_1 = require("socket.io");
 const redis_1 = require("@/config/redis");
 const helpers_1 = require("@/utils/helpers");
-const prisma_1 = require("@/database/prisma");
-let prisma = null;
+const Device_1 = __importDefault(require("@/models/Device"));
+const alert_1 = require("@/services/alert");
 let io;
-function getPrismaClient() {
-    if (!prisma) {
-        prisma = (0, prisma_1.getPrisma)();
-    }
-    return prisma;
-}
 function initWebSocket(httpServer) {
     io = new socket_io_1.Server(httpServer, {
         cors: {
@@ -161,25 +158,16 @@ async function setupOfflineDeviceChecker() {
         try {
             const offlineThreshold = new Date(Date.now() - envConfig.agentOfflineThreshold);
             // Find devices that should be offline
-            const devicesToMarkOffline = await getPrismaClient().device.findMany({
-                where: {
-                    isOnline: true,
-                    lastSeen: {
-                        lt: offlineThreshold,
-                    },
-                },
+            const devicesToMarkOffline = await Device_1.default.find({
+                status: 'ONLINE',
+                lastSeen: { $lt: offlineThreshold },
             });
             // Update devices and broadcast
             for (const device of devicesToMarkOffline) {
-                await getPrismaClient().device.update({
-                    where: { id: device.id },
-                    data: { isOnline: false },
-                });
-                broadcastDeviceStatus(device.organizationId, device.deviceId, false);
+                await Device_1.default.findByIdAndUpdate(device._id, { status: 'OFFLINE' }, { new: true });
+                broadcastDeviceStatus(device.organizationId.toString(), device.name, false);
                 // Create offline alert
-                const { DeviceService } = await Promise.resolve().then(() => __importStar(require('@/services/device')));
-                const deviceService = new DeviceService();
-                await deviceService.createAlert(device.id, device.organizationId, 'DEVICE_OFFLINE', 'CRITICAL', `Device ${device.name} is offline`);
+                await alert_1.alertService.createAlert(device.organizationId.toString(), `Device Offline`, `Device ${device.name} is offline`, 'CRITICAL', device._id.toString());
             }
         }
         catch (error) {

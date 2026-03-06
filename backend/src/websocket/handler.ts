@@ -1,15 +1,11 @@
 import { Server, Socket } from 'socket.io';
 import { getRedisClient } from '@/config/redis';
 import { verifyAccessToken } from '@/utils/helpers';
-import { getPrisma } from '@/database/prisma';
+import Device from '@/models/Device';
+import { alertService } from '@/services/alert';
+import { TokenPayload } from '@/types/index';
 
-let prisma: ReturnType<typeof getPrisma> | null = null;
-let io: Server;
-
-interface SocketUser {
-  userId: string;
-  orgId: string;
-  role: string;
+interface SocketUser extends TokenPayload {
   email: string;
 }
 
@@ -19,12 +15,7 @@ declare module 'socket.io' {
   }
 }
 
-function getPrismaClient() {
-  if (!prisma) {
-    prisma = getPrisma();
-  }
-  return prisma;
-}
+let io: Server;
 
 export function initWebSocket(httpServer: any) {
   io = new Server(httpServer, {
@@ -162,33 +153,28 @@ export async function setupOfflineDeviceChecker() {
       );
 
       // Find devices that should be offline
-      const devicesToMarkOffline = await getPrismaClient().device.findMany({
-        where: {
-          isOnline: true,
-          lastSeen: {
-            lt: offlineThreshold,
-          },
-        },
+      const devicesToMarkOffline = await Device.find({
+        status: 'ONLINE',
+        lastSeen: { $lt: offlineThreshold },
       });
 
       // Update devices and broadcast
       for (const device of devicesToMarkOffline) {
-        await getPrismaClient().device.update({
-          where: { id: device.id },
-          data: { isOnline: false },
-        });
+        await Device.findByIdAndUpdate(
+          device._id,
+          { status: 'OFFLINE' },
+          { new: true }
+        );
 
-        broadcastDeviceStatus(device.organizationId, device.deviceId, false);
+        broadcastDeviceStatus(device.organizationId.toString(), device.name, false);
 
         // Create offline alert
-        const { DeviceService } = await import('@/services/device');
-        const deviceService = new DeviceService();
-        await deviceService.createAlert(
-          device.id,
-          device.organizationId,
-          'DEVICE_OFFLINE' as any,
-          'CRITICAL' as any,
-          `Device ${device.name} is offline`
+        await alertService.createAlert(
+          device.organizationId.toString(),
+          `Device Offline`,
+          `Device ${device.name} is offline`,
+          'CRITICAL',
+          device._id.toString()
         );
       }
     } catch (error) {

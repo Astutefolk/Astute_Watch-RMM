@@ -1,83 +1,55 @@
-import { getPrisma } from '@/database/prisma';
-import { AppError } from '@/utils/helpers';
+import Alert from '@/models/Alert';
 
 export class AlertService {
-  private prisma = getPrisma();
+  async createAlert(
+    organizationId: string,
+    title: string,
+    message: string,
+    severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+    deviceId?: string
+  ) {
+    return await Alert.create({
+      organizationId,
+      title,
+      message,
+      severity,
+      deviceId,
+      status: 'UNRESOLVED',
+    });
+  }
 
-  async getAlerts(orgId: string, skip: number, take: number, unresolved?: boolean) {
-    const where: any = { orgId };
-    if (unresolved !== undefined) {
-      where.isResolved = !unresolved;
-    }
+  async getAlerts(organizationId: string, page: number = 1, limit: number = 10, unresolved: boolean = false) {
+    const skip = (page - 1) * limit;
+    const query: any = { organizationId };
+    if (unresolved) query.status = 'UNRESOLVED';
 
     const [alerts, total] = await Promise.all([
-      this.prisma.alert.findMany({
-        where,
-        include: {
-          device: {
-            select: { name: true, deviceId: true },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-      }),
-      this.prisma.alert.count({ where }),
+      Alert.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Alert.countDocuments(query),
     ]);
-
-    return { alerts, total };
+    return { alerts, total, page, limit };
   }
 
-  async getAlertById(alertId: string, orgId: string) {
-    const alert = await this.prisma.alert.findUnique({
-      where: { id: alertId },
-      include: {
-        device: {
-          select: { name: true, deviceId: true },
-        },
-      },
-    });
-
-    if (!alert) {
-      throw new AppError(404, 'Alert not found');
-    }
-
-    if (alert.orgId !== orgId) {
-      throw new AppError(403, 'Alert does not belong to this organization');
-    }
-
-    return alert;
+  async getAlert(alertId: string, organizationId: string) {
+    return await Alert.findOne({ _id: alertId, organizationId }).lean();
   }
 
-  async resolveAlert(alertId: string, orgId: string) {
-    await this.getAlertById(alertId, orgId);
-
-    return this.prisma.alert.update({
-      where: { id: alertId },
-      data: {
-        isResolved: true,
-        resolvedAt: new Date(),
-      },
-    });
+  async resolveAlert(alertId: string) {
+    return await Alert.findByIdAndUpdate(
+      alertId,
+      { status: 'RESOLVED', resolvedAt: new Date() },
+      { new: true }
+    ).lean();
   }
 
-  async getStats(orgId: string) {
-    const [total, unresolved, critical] = await Promise.all([
-      this.prisma.alert.count({
-        where: { orgId },
-      }),
-      this.prisma.alert.count({
-        where: { orgId, isResolved: false },
-      }),
-      this.prisma.alert.count({
-        where: {
-          orgId,
-          severity: 'CRITICAL',
-          isResolved: false,
-        },
-      }),
-    ]);
+  async getStats(organizationId: string) {
+    const alerts = await Alert.find({ organizationId }).lean();
+    const unresolved = alerts.filter((a) => a.status === 'UNRESOLVED').length;
+    const critical = alerts.filter((a) => a.severity === 'CRITICAL').length;
+    const high = alerts.filter((a) => a.severity === 'HIGH').length;
 
-    return { total, unresolved, critical };
+    return { total: alerts.length, unresolved, critical, high };
   }
 }
+
+export const alertService = new AlertService();

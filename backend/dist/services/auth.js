@@ -1,128 +1,86 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AuthService = void 0;
-const prisma_1 = require("@/database/prisma");
-const redis_1 = require("@/config/redis");
+exports.authService = exports.AuthService = void 0;
+const User_1 = __importDefault(require("@/models/User"));
+const Organization_1 = __importDefault(require("@/models/Organization"));
+const ApiKey_1 = __importDefault(require("@/models/ApiKey"));
 const helpers_1 = require("@/utils/helpers");
 class AuthService {
-    constructor() {
-        this.prisma = (0, prisma_1.getPrisma)();
-        this.redis = null;
-    }
-    getRedis() {
-        if (!this.redis) {
-            this.redis = (0, redis_1.getRedisClient)();
-        }
-        return this.redis;
-    }
     async register(email, password, organizationName) {
-        // Validate input
-        if (!(0, helpers_1.isValidEmail)(email)) {
-            throw new helpers_1.AppError(400, 'Invalid email format');
-        }
-        const passwordValidation = (0, helpers_1.validatePassword)(password);
-        if (!passwordValidation.valid) {
-            throw new helpers_1.AppError(400, passwordValidation.errors.join(', '));
-        }
-        // Check if user already exists
-        const existingUser = await this.prisma.user.findUnique({
-            where: { email },
-        });
-        if (existingUser) {
-            throw new helpers_1.AppError(409, 'Email already registered');
-        }
         // Create organization
-        const org = await this.prisma.organization.create({
-            data: {
-                name: organizationName,
-            },
-        });
+        const org = await Organization_1.default.create({ name: organizationName });
         // Hash password
-        const passwordHash = await (0, helpers_1.hashPassword)(password);
+        const hashedPassword = await (0, helpers_1.hashPassword)(password);
         // Create user
-        const user = await this.prisma.user.create({
-            data: {
-                email,
-                password: passwordHash,
-                role: 'ADMIN', // First user is admin
-                organizationId: org.id,
-            },
+        const user = await User_1.default.create({
+            email,
+            password: hashedPassword,
+            organizationId: org._id,
+            role: 'ADMIN',
         });
-        // Generate API key for organization
+        // Generate API key
         const apiKey = (0, helpers_1.generateApiKey)();
         const hashedApiKey = (0, helpers_1.hashApiKey)(apiKey);
-        await this.prisma.apiKey.create({
-            data: {
-                key: hashedApiKey,
-                name: 'Default API Key',
-                organizationId: org.id,
-            },
+        await ApiKey_1.default.create({
+            organizationId: org._id,
+            name: 'Default API Key',
+            key: hashedApiKey,
         });
         return {
-            userId: user.id,
-            orgId: org.id,
+            userId: user._id,
+            orgId: org._id,
             email: user.email,
-            apiKey: apiKey, // Only return once on creation
+            apiKey: apiKey,
         };
     }
     async login(email, password) {
-        const user = await this.prisma.user.findUnique({
-            where: { email },
-            include: {
-                orgId: {
-                    select: { id: true, name: true },
-                },
-            },
-        });
+        const user = await User_1.default.findOne({ email });
         if (!user) {
-            throw new helpers_1.AppError(401, 'Invalid email or password');
+            throw new Error('Invalid email or password');
         }
-        // Compare passwords
-        const isPasswordValid = await (0, helpers_1.comparePasswords)(password, user.password);
-        if (!isPasswordValid) {
-            throw new helpers_1.AppError(401, 'Invalid email or password');
+        const isValid = await (0, helpers_1.comparePasswords)(password, user.password);
+        if (!isValid) {
+            throw new Error('Invalid email or password');
         }
-        // Cache user session in Redis
-        const sessionKey = `session:${user.id}`;
-        await this.getRedis().setEx(sessionKey, 7 * 24 * 60 * 60, JSON.stringify({
-            userId: user.id,
-            email: user.email,
-            orgId: user.organizationId,
-            role: user.role,
-        }));
         return {
-            userId: user.id,
+            userId: user._id,
             email: user.email,
             role: user.role,
             orgId: user.organizationId,
         };
     }
     async findUserById(userId) {
-        return this.prisma.user.findUnique({
-            where: { id: userId },
-            select: {
-                id: true,
-                email: true,
-                role: true,
-                organizationId: true,
-            },
-        });
+        return await User_1.default.findById(userId).select('-password').lean();
     }
     async validateApiKey(apiKey) {
         const hashedKey = (0, helpers_1.hashApiKey)(apiKey);
-        const key = await this.prisma.apiKey.findUnique({
-            where: { key: hashedKey },
-            include: {
-                orgId: {
-                    select: { id: true },
-                },
-            },
+        return await ApiKey_1.default.findOne({ key: hashedKey, isActive: true }).lean();
+    }
+    async createApiKey(organizationId, name) {
+        const apiKey = (0, helpers_1.generateApiKey)();
+        const hashedKey = (0, helpers_1.hashApiKey)(apiKey);
+        const created = await ApiKey_1.default.create({
+            organizationId,
+            name,
+            key: hashedKey,
         });
-        if (!key || !key.isActive) {
-            return null;
-        }
-        return key;
+        return {
+            id: created._id,
+            name: created.name,
+            key: apiKey,
+            isActive: created.isActive,
+        };
+    }
+    async getApiKeys(organizationId) {
+        return await ApiKey_1.default.find({ organizationId }).select('-key').lean();
+    }
+    async toggleApiKey(apiKeyId, isActive) {
+        return await ApiKey_1.default.findByIdAndUpdate(apiKeyId, { isActive }, { new: true }).lean();
     }
 }
 exports.AuthService = AuthService;
+exports.authService = new AuthService();
 //# sourceMappingURL=auth.js.map

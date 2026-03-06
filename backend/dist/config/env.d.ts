@@ -1,5 +1,5 @@
 export interface EnvConfig {
-    databaseUrl: string;
+    mongodbUri: string;
     redisUrl: string;
     jwtSecret: string;
     jwtExpiresIn: string;

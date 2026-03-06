@@ -42,7 +42,7 @@ const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const http_1 = require("http");
 const env_1 = require("@/config/env");
-const prisma_1 = require("@/database/prisma");
+const mongodb_1 = require("@/database/mongodb");
 const redis_1 = require("@/config/redis");
 const auth_1 = require("@/middleware/auth");
 const rateLimit_1 = require("@/middleware/rateLimit");
@@ -52,9 +52,9 @@ const httpServer = (0, http_1.createServer)(app);
 async function initialize() {
     try {
         console.log('🚀 Starting DATTO RMM Backend...');
-        // Connect to databases
-        await (0, prisma_1.initDb)();
-        console.log('✅ Database connected');
+        // Connect to MongoDB
+        await (0, mongodb_1.connectDB)();
+        console.log('✅ MongoDB connected');
         await (0, redis_1.initRedis)();
         console.log('✅ Redis connected');
         // Import websocket handler AFTER databases are initialized
@@ -130,7 +130,7 @@ process.on('SIGTERM', async () => {
     console.log('📭 SIGTERM signal received: closing HTTP server');
     httpServer.close(async () => {
         console.log('HTTP server closed');
-        await (0, prisma_1.closeDb)();
+        await (0, mongodb_1.disconnectDB)();
         await (0, redis_1.closeRedis)();
         process.exit(0);
     });
@@ -139,7 +139,7 @@ process.on('SIGINT', async () => {
     console.log('📭 SIGINT signal received: closing HTTP server');
     httpServer.close(async () => {
         console.log('HTTP server closed');
-        await (0, prisma_1.closeDb)();
+        await (0, mongodb_1.disconnectDB)();
         await (0, redis_1.closeRedis)();
         process.exit(0);
     });

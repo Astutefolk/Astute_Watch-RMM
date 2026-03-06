@@ -2,7 +2,7 @@ export interface TokenPayload {
   userId: string;
   orgId: string;
   email: string;
-  role: 'ADMIN' | 'TECHNICIAN';
+  role: 'ADMIN' | 'USER';
 }
 
 export interface AuthRequest {

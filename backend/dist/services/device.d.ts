@@ -1,118 +1,54 @@
-declare const AlertType: {
-    readonly CPU_HIGH: "CPU_HIGH";
-    readonly RAM_HIGH: "RAM_HIGH";
-    readonly DISK_HIGH: "DISK_HIGH";
-    readonly DEVICE_OFFLINE: "DEVICE_OFFLINE";
-    readonly DEVICE_ONLINE: "DEVICE_ONLINE";
-};
-declare const AlertSeverity: {
-    readonly INFO: "INFO";
-    readonly WARNING: "WARNING";
-    readonly CRITICAL: "CRITICAL";
-};
-type AlertType = typeof AlertType[keyof typeof AlertType];
-type AlertSeverity = typeof AlertSeverity[keyof typeof AlertSeverity];
 export declare class DeviceService {
-    private prisma;
-    private redis;
-    private getRedis;
-    registerDevice(deviceId: string, orgId: string, osVersion?: string): Promise<{
-        name: string;
+    createDevice(organizationId: string, name: string, hostname?: string): Promise<import("mongoose").Document<unknown, {}, import("@/models/Device").IDevice, {}, import("mongoose").DefaultSchemaOptions> & import("@/models/Device").IDevice & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    } & {
         id: string;
-        deviceId: string;
-        osVersion: string | null;
-        lastSeen: Date | null;
-        isOnline: boolean;
-        organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
     }>;
-    recordHeartbeat(deviceId: string, orgId: string, cpu: number, ram: number, disk: number, osVersion?: string): Promise<{
-        name: string;
-        id: string;
-        deviceId: string;
-        osVersion: string | null;
-        lastSeen: Date | null;
-        isOnline: boolean;
-        organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
-    }>;
-    checkAndCreateAlerts(deviceId: string, orgId: string, cpu: number, ram: number, disk: number): Promise<void>;
-    createAlert(deviceId: string, orgId: string, type: AlertType, severity: AlertSeverity, message: string): Promise<{
-        type: import(".prisma/client").$Enums.AlertType;
-        message: string;
-        id: string;
-        deviceId: string;
-        createdAt: Date;
-        orgId: string;
-        severity: import(".prisma/client").$Enums.AlertSeverity;
-        isResolved: boolean;
-        resolvedAt: Date | null;
-    }>;
-    getDevices(orgId: string, skip: number, take: number): Promise<{
-        devices: ({
-            metrics: {
-                id: string;
-                deviceId: string;
-                createdAt: Date;
-                orgId: string;
-                cpu: number;
-                ram: number;
-                disk: number;
-                timestamp: Date;
-            }[];
-        } & {
-            name: string;
-            id: string;
-            deviceId: string;
-            osVersion: string | null;
-            lastSeen: Date | null;
-            isOnline: boolean;
-            organizationId: string;
-            createdAt: Date;
-            updatedAt: Date;
+    getDevices(organizationId: string, page?: number, limit?: number): Promise<{
+        devices: (import("@/models/Device").IDevice & Required<{
+            _id: import("mongoose").Types.ObjectId;
+        }> & {
+            __v: number;
         })[];
         total: number;
+        page: number;
+        limit: number;
     }>;
-    getDeviceById(deviceId: string, orgId: string): Promise<{
-        metrics: {
-            id: string;
-            deviceId: string;
-            createdAt: Date;
-            orgId: string;
-            cpu: number;
-            ram: number;
-            disk: number;
-            timestamp: Date;
-        }[];
-    } & {
-        name: string;
-        id: string;
-        deviceId: string;
-        osVersion: string | null;
-        lastSeen: Date | null;
-        isOnline: boolean;
-        organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
+    getDevice(deviceId: string, organizationId: string): Promise<(import("@/models/Device").IDevice & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    }) | null>;
+    updateDeviceStatus(deviceId: string, status: 'ONLINE' | 'OFFLINE' | 'ERROR'): Promise<(import("@/models/Device").IDevice & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    }) | null>;
+    updateDeviceMetrics(deviceId: string, cpuUsage: number, memoryUsage: number): Promise<(import("@/models/Device").IDevice & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    }) | null>;
+    deleteDevice(deviceId: string): Promise<(import("@/models/Device").IDevice & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }> & {
+        __v: number;
+    }) | null>;
+    getDashboard(organizationId: string): Promise<{
+        totalDevices: number;
+        online: number;
+        offline: number;
+        avgCpu: number;
+        avgMemory: number;
     }>;
-    deleteDevice(deviceId: string, orgId: string): Promise<{
-        name: string;
-        id: string;
-        deviceId: string;
-        osVersion: string | null;
-        lastSeen: Date | null;
-        isOnline: boolean;
-        organizationId: string;
-        createdAt: Date;
-        updatedAt: Date;
-    }>;
-    getDeviceStats(orgId: string): Promise<{
+    getStats(organizationId: string): Promise<{
         total: number;
         online: number;
         offline: number;
+        error: number;
     }>;
 }
-export {};
+export declare const deviceService: DeviceService;
 //# sourceMappingURL=device.d.ts.map

@@ -1,8 +1,6 @@
 import { Server } from 'socket.io';
-interface SocketUser {
-    userId: string;
-    orgId: string;
-    role: string;
+import { TokenPayload } from '@/types/index';
+interface SocketUser extends TokenPayload {
     email: string;
 }
 declare module 'socket.io' {

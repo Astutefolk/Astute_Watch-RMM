@@ -24,7 +24,7 @@ function getEnvArray(key, defaultValue) {
 }
 exports.envConfig = {
     // Database
-    databaseUrl: getEnv('DATABASE_URL'),
+    mongodbUri: getEnv('MONGODB_URI', 'mongodb://localhost:27017/datto'),
     // Redis
     redisUrl: getEnv('REDIS_URL'),
     // JWT

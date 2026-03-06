@@ -1,117 +1,55 @@
-import { getPrisma } from '@/database/prisma';
-import { getRedisClient } from '@/config/redis';
-import {
-  hashPassword,
-  comparePasswords,
-  hashApiKey,
-  generateApiKey,
-  isValidEmail,
-  validatePassword,
-  AppError,
-} from '@/utils/helpers';
+import User from '@/models/User';
+import Organization from '@/models/Organization';
+import ApiKey from '@/models/ApiKey';
+import { hashPassword, comparePasswords, hashApiKey, generateApiKey } from '@/utils/helpers';
 
 export class AuthService {
-  private prisma = getPrisma();
-  private redis: ReturnType<typeof getRedisClient> | null = null;
-
-  private getRedis() {
-    if (!this.redis) {
-      this.redis = getRedisClient();
-    }
-    return this.redis;
-  }
-
   async register(email: string, password: string, organizationName: string) {
-    // Validate input
-    if (!isValidEmail(email)) {
-      throw new AppError(400, 'Invalid email format');
-    }
-
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.valid) {
-      throw new AppError(400, passwordValidation.errors.join(', '));
-    }
-
-    // Check if user already exists
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      throw new AppError(409, 'Email already registered');
-    }
-
     // Create organization
-    const org = await this.prisma.organization.create({
-      data: {
-        name: organizationName,
-      },
-    });
+    const org = await Organization.create({ name: organizationName });
 
     // Hash password
-    const passwordHash = await hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
     // Create user
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        password: passwordHash,
-        role: 'ADMIN', // First user is admin
-        organizationId: org.id,
-      },
+    const user = await User.create({
+      email,
+      password: hashedPassword,
+      organizationId: org._id,
+      role: 'ADMIN',
     });
 
-    // Generate API key for organization
+    // Generate API key
     const apiKey = generateApiKey();
     const hashedApiKey = hashApiKey(apiKey);
 
-    await this.prisma.apiKey.create({
-      data: {
-        key: hashedApiKey,
-        name: 'Default API Key',
-        organizationId: org.id,
-      },
+    await ApiKey.create({
+      organizationId: org._id,
+      name: 'Default API Key',
+      key: hashedApiKey,
     });
 
     return {
-      userId: user.id,
-      orgId: org.id,
+      userId: user._id,
+      orgId: org._id,
       email: user.email,
-      apiKey: apiKey, // Only return once on creation
+      apiKey: apiKey,
     };
   }
 
   async login(email: string, password: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-      include: {
-        orgId: {
-          select: { id: true, name: true },
-        },
-      },
-    });
-
+    const user = await User.findOne({ email });
     if (!user) {
-      throw new AppError(401, 'Invalid email or password');
+      throw new Error('Invalid email or password');
     }
 
-    // Compare passwords
-    const isPasswordValid = await comparePasswords(password, user.password);
-    if (!isPasswordValid) {
-      throw new AppError(401, 'Invalid email or password');
+    const isValid = await comparePasswords(password, user.password);
+    if (!isValid) {
+      throw new Error('Invalid email or password');
     }
-
-    // Cache user session in Redis
-    const sessionKey = `session:${user.id}`;
-    await this.getRedis().setEx(sessionKey, 7 * 24 * 60 * 60, JSON.stringify({
-      userId: user.id,
-      email: user.email,
-      orgId: user.organizationId,
-      role: user.role,
-    }));
 
     return {
-      userId: user.id,
+      userId: user._id,
       email: user.email,
       role: user.role,
       orgId: user.organizationId,
@@ -119,32 +57,39 @@ export class AuthService {
   }
 
   async findUserById(userId: string) {
-    return this.prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        organizationId: true,
-      },
-    });
+    return await User.findById(userId).select('-password').lean();
   }
 
   async validateApiKey(apiKey: string) {
     const hashedKey = hashApiKey(apiKey);
-    const key = await this.prisma.apiKey.findUnique({
-      where: { key: hashedKey },
-      include: {
-        orgId: {
-          select: { id: true },
-        },
-      },
+    return await ApiKey.findOne({ key: hashedKey, isActive: true }).lean();
+  }
+
+  async createApiKey(organizationId: string, name: string) {
+    const apiKey = generateApiKey();
+    const hashedKey = hashApiKey(apiKey);
+
+    const created = await ApiKey.create({
+      organizationId,
+      name,
+      key: hashedKey,
     });
 
-    if (!key || !key.isActive) {
-      return null;
-    }
+    return {
+      id: created._id,
+      name: created.name,
+      key: apiKey,
+      isActive: created.isActive,
+    };
+  }
 
-    return key;
+  async getApiKeys(organizationId: string) {
+    return await ApiKey.find({ organizationId }).select('-key').lean();
+  }
+
+  async toggleApiKey(apiKeyId: string, isActive: boolean) {
+    return await ApiKey.findByIdAndUpdate(apiKeyId, { isActive }, { new: true }).lean();
   }
 }
+
+export const authService = new AuthService();
